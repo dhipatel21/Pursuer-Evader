@@ -37,30 +37,30 @@ lc.publish("MBOT_TIMESYNC", stop_time.encode())
 lc.publish("MBOT_MOTOR_COMMAND", stop.encode())
 time.sleep(STOP_LENGTH)
 
-# # Drive backward
-# drive = mbot_motor_command_t()
-# drive.utime = current_utime()
-# drive.trans_v = -0.25
-# drive.angular_v = 0.0
+# Drive backward
+drive = mbot_motor_command_t()
+drive.utime = current_utime()
+drive.trans_v = -0.25
+drive.angular_v = 0.0
 
-# drive_time = timestamp_t()
-# drive_time.utime = drive.utime
+drive_time = timestamp_t()
+drive_time.utime = drive.utime
 
-# lc.publish("MBOT_TIMESYNC", drive_time.encode())
-# lc.publish("MBOT_MOTOR_COMMAND", drive.encode())
-# time.sleep(DRIVE_LENGTH)
+lc.publish("MBOT_TIMESYNC", drive_time.encode())
+lc.publish("MBOT_MOTOR_COMMAND", drive.encode())
+time.sleep(DRIVE_LENGTH)
 
-# # Stop
-# stop = mbot_motor_command_t()
-# stop.utime = current_utime()
-# stop.trans_v = 0.0
-# stop.angular_v = 0.0
+# Stop
+stop = mbot_motor_command_t()
+stop.utime = current_utime()
+stop.trans_v = 0.0
+stop.angular_v = 0.0
 
-# stop_time = timestamp_t()
-# stop_time.utime = stop.utime
-# lc.publish("MBOT_TIMESYNC", stop_time.encode())
-# lc.publish("MBOT_MOTOR_COMMAND", stop.encode())
-# time.sleep(STOP_LENGTH)
+stop_time = timestamp_t()
+stop_time.utime = stop.utime
+lc.publish("MBOT_TIMESYNC", stop_time.encode())
+lc.publish("MBOT_MOTOR_COMMAND", stop.encode())
+time.sleep(STOP_LENGTH)
 
 # # Rotate
 # rotate = mbot_motor_command_t()
