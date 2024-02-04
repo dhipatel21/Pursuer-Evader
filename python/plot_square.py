@@ -14,7 +14,7 @@ def is_between(a, b, c):
 
 sys.path.append("lcmtypes")
 
-WHEEL_BASE = 0.15
+WHEEL_BASE = 0.165
 WHEEL_DIAMETER = 0.084
 GEAR_RATIO = 78
 ENCODER_RES = 20
@@ -27,6 +27,9 @@ if len(sys.argv) < 2:
 file = sys.argv[1]
 log = lcm.EventLog(file, "r")
 
+path_data = []
+command_init = 0
+
 odometry_data = np.empty((0, 3), dtype=float)
 odometry_init = 0
 
@@ -38,7 +41,7 @@ for event in log:
 
         path_start_utime = path_msg.utime
         print("path_start_utime: {}".format(path_start_utime))
-        path_data : list[pose_xyt_t] = path_msg.path
+        path_data = path_msg.path
 
     if event.channel == "ODOMETRY":
         odometry_msg = odometry_t.decode(event.data)
@@ -73,16 +76,16 @@ odom_x = odometry_data[:, 1]
 odom_y = odometry_data[:, 2]
 
 # Plot everything
-fig, axs = plt.subplots(1, 1, sharey=True, figsize=(10, 10))
+fig = plt.figure(figsize=(10,10))
 
 # Left wheel
-axs[0].plot(path_x, path_y, 'r', label="Target Position")
-axs[0].plot(odom_x, odom_y,
+plt.plot(path_x, path_y, 'r', label="Target Position")
+plt.plot(odom_x, odom_y,
                c='b', label="Odometry position")
-axs[0].legend()
-axs[0].set_xlabel("X (m)")
-axs[0].set_ylabel("Y (m)")
-axs[0].set_title("Square Plot")
+plt.legend()
+plt.xlabel("X (m)")
+plt.ylabel("Y (m)")
+plt.title("Square Plot")
 
 plt.savefig(f"{file}.png")
 
