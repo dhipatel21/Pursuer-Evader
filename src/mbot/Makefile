@@ -5,7 +5,7 @@ CXXFLAGS = $(CXXFLAGS_STD) $(CFLAGS_COMMON)  $(CFLAGS_LCMTYPES) -O3
 LDFLAGS = $(LDFLAGS_STD) $(LDFLAGS_COMMON) $(LDFLAGS_LCMTYPES) $(LDFLAGS_RPLIDAR) 
 LIBDEPS = $(call libdeps, $(LDFLAGS))
 
-BIN_DRIVE_SQUARE = $(BIN_PATH)/drive_square
+BIN_DRIVE_SQUARE = $(BIN_PATH)/drive_maze
 BIN_RPLIDAR_DRIVER = $(BIN_PATH)/rplidar_driver
 BIN_MOTION_CONTROLLER = $(BIN_PATH)/motion_controller
 BIN_TIMESYNC = $(BIN_PATH)/timesync
@@ -18,7 +18,7 @@ all: $(ALL)
 
 laptop-only: $(BIN_TIMESYNC) $(BIN_DRIVE_SQUARE) $(BIN_MOTION_CONTROLLER)
 
-$(BIN_DRIVE_SQUARE): drive_square.o $(LIBDEPS)
+$(BIN_DRIVE_SQUARE): drive_maze.o $(LIBDEPS)
 	@echo "    $@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 

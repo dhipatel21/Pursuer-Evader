@@ -31,7 +31,7 @@ private:
     *  - Week 4: Secion 3.2
     *      - Tune PID parameters for forward and turning during DRIVE state
     *************************************************************/
-    float fwd_pid[3] = {1.0, 0, 0};
+    float fwd_pid[3] = {1.2, 0, 0};
     float turn_pid[3] = {1.0, 0, 0};
     /*************************************************************
     * End of TODO
@@ -82,7 +82,7 @@ private:
     * TODO:
     *      - Tune PID parameters for turning during TURN state
     *************************************************************/
-    float turn_pid[3] = {1.0, 0, 0};
+    float turn_pid[3] = {3, 0, 0};
     /*************************************************************
     * End of TODO
     *************************************************************/
@@ -356,12 +356,12 @@ int main(int argc, char** argv)
 
                 // Limit command values
                 // Fwd vel
-                float max_fwd_vel = 0.3;
+                float max_fwd_vel = 0.8;
                 if (cmd.trans_v > max_fwd_vel) cmd.trans_v = max_fwd_vel;
                 else if (cmd.trans_v < -max_fwd_vel) cmd.trans_v = -max_fwd_vel;
 
                 // Angular vel
-                float max_ang_vel = M_PI * 2.0 / 3.0;
+                float max_ang_vel = M_PI;
                 if (cmd.angular_v > max_ang_vel) cmd.angular_v = max_ang_vel;
                 else if (cmd.angular_v < -max_ang_vel) cmd.angular_v = -max_ang_vel;
                 

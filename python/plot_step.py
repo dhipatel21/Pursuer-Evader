@@ -123,7 +123,7 @@ left_cmd_times_[-1] = enc_time[-1]
 right_cmd_times_[-1] = enc_time[-1]
 
 # Plot everything
-fig, axs = plt.subplots(1, 2, sharey=True, figsize=(10, 10))
+fig, axs = plt.subplots(1, 2, sharey=True, figsize=(10, 10), sharey=False)
 
 # Left wheel
 axs[0].plot(enc_time[1:], left_measured_vel, 'b', label="Measured Velocity")
@@ -133,6 +133,7 @@ axs[0].legend()
 axs[0].set_xlabel("Time (s)")
 axs[0].set_ylabel("Velocity (m/s)")
 axs[0].set_title("Left Wheel")
+
 
 # Right wheel
 axs[1].plot(enc_time[1:], right_measured_vel, 'b', label="Measured Velocity")

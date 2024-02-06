@@ -32,7 +32,7 @@ pid_msg.bf_trans_Tf = 20.0
 # Angular velocity
 pid_msg.bf_rot_kp = 0.3
 pid_msg.bf_rot_ki = 1.5
-pid_msg.bf_rot_kd = 0.000
+pid_msg.bf_rot_kd = 0.0
 pid_msg.bf_rot_Tf = 20.0
 
 # We don't use this
