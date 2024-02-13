@@ -17,6 +17,7 @@ float inverse_sensor_model(int x, int y, int x1, int y1, float range) {
     // !!!!!!!!!!!!!!!!!
     // RETURN VALUES ARE TBD - what exactly is l0, l occ, and l empt?
     // how to incorporate log odds in a way that makes sense
+    // are the log odds in each cell already set to 0.5? --> makes the l0 calculation straightforward 
     // !!!!!!!!!!!!!!!!
 
     Point<int> pointA = {x, y};
@@ -44,6 +45,11 @@ float inverse_sensor_model(int x, int y, int x1, int y1, float range) {
     if (dist_to_cell < range) {
         return 0;
     }
+
+    // return unkown if we don't hit any of the other cases 
+    else {
+        return 0.5;
+    }
 }
 
 
@@ -53,8 +59,17 @@ void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGr
     int x = pose.x;
     int y = pose.y;
 
-    // From Lecture 07 slide 22
+    // Pseudo code From Lecture 07 slide 22
     // MovingLaserScan movingScan(scan, previousPose, pose);
+
+    // for (auto& ray : movingScan) {
+    //     scoreEndpoint(ray, map);
+    // }
+
+    // for (auto& ray : movingScan) {
+    //     scoreRay(ray, map);
+    // }
+    // previousPose_ = pose;
 
     // From Lecture 07 slide 11 --> needs to be fixed, include inverse sensor model?
     for (int i = 0; i < scan.num_ranges; ++i)
@@ -80,7 +95,7 @@ void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGr
             int newValue = oldValue;
 
             if (map.isCellInGrid(x, y)) {
-                newValue += inverse_sensor_model(x, y, x1, y1, range);
+                newValue += inverse_sensor_model(x, y, x1, y1, range) - log(map.logOdds(x, y) / (1 - map.logOdds(x, y)));
                 map.setLogOdds(x, y, newValue);
             }
 
