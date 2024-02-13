@@ -55,11 +55,9 @@ float inverse_sensor_model(int x, int y, int x1, int y1, float range) {
 
 void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGrid& map)
 {
-    //////////////// TODO: Implement your occupancy grid algorithm here ///////////////////////
-    int x = pose.x;
-    int y = pose.y;
+    //////////////// TODO: Implement your occupancy grid algorithm here //////////////////////
 
-    // Pseudo code From Lecture 07 slide 22
+    // Pseudo code From Lecture 07 slide 22 --> need to include movingScan
     // MovingLaserScan movingScan(scan, previousPose, pose);
 
     // for (auto& ray : movingScan) {
@@ -72,20 +70,24 @@ void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGr
     // previousPose_ = pose;
 
     // From Lecture 07 slide 11 --> needs to be fixed, include inverse sensor model?
-    for (int i = 0; i < scan.num_ranges; ++i)
-    {
-        float range = scan.ranges[i];
 
-        float endpointX = x0 + range * cos(pose.theta + scan.thetas[i]);
-        float endpointY = y0 + range * sin(pose.theta + scan.thetas[i]);
-        int x1 = endpointX / map.metersPerCell();
-        int y1 = endpointY / map.metersPerCell();
+    int x = pose.x;
+    int y = pose.y;
+
+    for (int i = 0; i < scan.num_ranges; ++i) {
+        float range = scan.ranges[i];
+        Point<float> endpoint;
+
+        endpoint.x = x + range * cos(pose.theta + scan.thetas[i]);
+        endpoint.y = y + range * sin(pose.theta + scan.thetas[i]);
+        int x1 = endpoint.x / map.metersPerCell();
+        int y1 = endpoint.y / map.metersPerCell();
 
         // Bresenham's line algorithm
         int dx = abs(x1 - x);
         int dy = abs(y1 - y);
-        int sx = poseX < endX ? 1 : -1;
-        int sy = poseY < endY ? 1 : -1;
+        int sx = x < x1 ? 1 : -1;
+        int sy = y < y1 ? 1 : -1;
         int err = dx - dy;
 
         while (x1 != x || y1 != y) {
