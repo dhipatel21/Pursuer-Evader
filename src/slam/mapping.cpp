@@ -96,6 +96,14 @@ void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGr
 
             if (map.isCellInGrid(x, y)) {
                 newValue += inverse_sensor_model(x, y, x1, y1, range) - log(map.logOdds(x, y) / (1 - map.logOdds(x, y)));
+                // keep logOdds in the range [-127, 127]
+                if (newValue > 127) {
+                    newValue = 127;
+                }
+                else if (newValue < -127) {
+                    newValue = -127;
+                }
+
                 map.setLogOdds(x, y, newValue);
             }
 
