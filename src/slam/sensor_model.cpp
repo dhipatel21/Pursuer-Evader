@@ -8,6 +8,7 @@
 SensorModel::SensorModel(void)
 {
     ///////// TODO: Handle any initialization needed for your sensor model
+
 }
 
 
@@ -15,8 +16,10 @@ double SensorModel::likelihood(const particle_t& sample, const lidar_t& scan, co
 {
     ///////////// TODO: Implement your sensor model for calculating the likelihood of a particle given a laser scan //////////
    float likelihood = 0.0;
+
    // Iterate over laser scan readings
     for (size_t i = 0; i < scan.num_ranges; ++i) {
+
         // Get current range measurement
         double range = scan.ranges[i];
 
@@ -27,7 +30,6 @@ double SensorModel::likelihood(const particle_t& sample, const lidar_t& scan, co
         Point<float> endpoint;
         endpoint.x = sample.pose.x + range * cos(angle + sample.pose.theta);
         endpoint.y = sample.pose.y + range * sin(angle + sample.pose.theta);
-
     }
 
     return log_likelihood;

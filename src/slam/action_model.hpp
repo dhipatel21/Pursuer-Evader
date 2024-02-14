@@ -56,6 +56,14 @@ public:
 private:
     
     ////////// TODO: Add private member variables needed for you implementation ///////////////////
+    float rot1;  // alpha or first rotation
+    float trans; // delta s or translation
+    float rot2;  // delta theta minus alpha or second rotation
+
+    // samples from normal distribution, representing errors
+    float eps1;
+    float eps2;
+    float eps3;
 };
 
 #endif // SLAM_ACTION_MODEL_HPP
