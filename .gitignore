@@ -288,3 +288,9 @@ botlab-data
 
 #executables
 bin/*
+
+*.png
+logs/
+logs/*
+python/logs/
+python/logs/*

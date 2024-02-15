@@ -2,6 +2,10 @@
 #define SLAM_MOVING_LASER_SCAN_HPP
 
 #include <common/point.hpp>
+#include <common/interpolation.hpp>
+#include <lcmtypes/lidar_t.hpp>
+#include <lcmtypes/pose_xyt_t.hpp>
+#include <common/angle_functions.hpp>
 #include <vector>
 
 class lidar_t;

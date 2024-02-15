@@ -1,8 +1,4 @@
 #include <slam/moving_laser_scan.hpp>
-#include <common/interpolation.hpp>
-#include <lcmtypes/lidar_t.hpp>
-#include <lcmtypes/pose_xyt_t.hpp>
-#include <common/angle_functions.hpp>
 #include <cassert>
     
 MovingLaserScan::MovingLaserScan(const lidar_t& scan,

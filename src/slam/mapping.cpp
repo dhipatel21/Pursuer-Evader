@@ -13,42 +13,32 @@ Mapping::Mapping(float maxLaserDistance, int8_t hitOdds, int8_t missOdds)
 }
 
 
-float inverse_sensor_model(int x, int y, int x1, int y1, float range) {
-    // !!!!!!!!!!!!!!!!!
-    // RETURN VALUES ARE TBD - what exactly is l0, l occ, and l empt?
-    // how to incorporate log odds in a way that makes sense
-    // are the log odds in each cell already set to 0.5? --> makes the l0 calculation straightforward 
-    // !!!!!!!!!!!!!!!!
-
+float inverse_sensor_model(float x, float y, float theta, float x1, float y1, float range) {
     Point<int> pointA = {x, y};
     Point<int> pointB = {x1, y1};
 
-    float dist_to_cell = distance_between_points(pointA, pointB);
-    float angle_to_cell = atan2(pointB.y - pointA.y, pointB.x - pointA.x) - pose.theta;
-
+    float r = distance_between_points(pointA, pointB);
+    float phi = atan2(pointB.y - pointA.y, pointB.x - pointA.x) - theta;
     float alpha = 0.1; // dimension of cell is 10x10 cm
     float z_max = 10; // max allowable distance is 10 m (???? Might need to confirm this)
 
     // if the distance to the cell is greater than the maximum allowable range or the measured range
     // then it is beyond an obstacle and/or unknown
-    if dist_to_cell > min(z_max, range + alpha/2) { 
-        return 0.5;
-    }
-
-    // if the measured range to obstacle is less than the maximum allowable range AND the difference
-    // between the measured range and the distance to that cell is ~0, then the cell is an obstacle
-    if (range < z_max) && (abs(dist_to_cell - range) < alpha/2) { 
-        return 1;
-    }
-
-    // if distance to cell is less than measured range to obstacle, then it is unoccupied
-    if (dist_to_cell < range) {
+    if (r > std::min(z_max, range + alpha/2)) { 
         return 0;
     }
-
+    // if the measured range to obstacle is less than the maximum allowable range AND the difference
+    // between the measured range and the distance to that cell is ~0, then the cell is an obstacle
+    else if ((range < z_max) && (abs(r - range) < alpha/2)) { 
+        return 1;
+    }
+    // if distance to cell is less than measured range to obstacle, then it is unoccupied
+    else if (r <= range) {
+        return -1;
+    }
     // return unkown if we don't hit any of the other cases 
     else {
-        return 0.5;
+        return 0;
     }
 }
 
@@ -71,8 +61,9 @@ void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGr
 
     // From Lecture 07 slide 11 --> needs to be fixed, include inverse sensor model?
 
-    int x = pose.x;
-    int y = pose.y;
+    float x = pose.x;
+    float y = pose.y;
+    float theta = pose.theta;
 
     for (int i = 0; i < scan.num_ranges; ++i) {
         float range = scan.ranges[i];
@@ -97,7 +88,7 @@ void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGr
             int newValue = oldValue;
 
             if (map.isCellInGrid(x, y)) {
-                newValue += inverse_sensor_model(x, y, x1, y1, range) - log(map.logOdds(x, y) / (1 - map.logOdds(x, y)));
+                newValue += inverse_sensor_model(x, y, theta, x1, y1, range) - log(map.logOdds(x, y) / (1 - map.logOdds(x, y)));
                 // keep logOdds in the range [-127, 127]
                 if (newValue > 127) {
                     newValue = 127;

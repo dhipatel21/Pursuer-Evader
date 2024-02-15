@@ -81,24 +81,24 @@ odom_x = odometry_data[:, 1]
 odom_y = odometry_data[:, 2]
 odom_theta = odometry_data[:, 3]
 
-fig, axs = plt.subplots(1, 2, sharey=False, figsize=(10, 10))
+# fig, axs = plt.subplots(1, 2, sharey=False, figsize=(10, 10))
 
 # Plot everything
 
 # Left wheel
-axs[0].plot(odometry_time, odom_x,
-               c='b', label="Robot Frame X vs t")
-axs[0].set_xlabel("Time (s)")
-axs[0].set_ylabel("Robot X-Position (m)")
-axs[0].set_title("Robot X-Position (m) vs. Time (s)")
-axs[0].set(ylim=(-2, 2))
+# plt.plot(odometry_time, odom_x,
+#                c='b', label="Robot Frame X vs t")
+# plt.xlabel("Time (s)")
+# plt.ylabel("Robot X-Position (m)")
+# plt.title("Robot X-Position (m) vs. Time (s)")
+# plt.ylim(0, 1.2)
 
-axs[1].plot(odometry_time, odom_theta,
+plt.plot(odometry_time, odom_theta,
                c='b', label="Robot Frame Θ vs t")
-axs[1].set_xlabel("Time (s)")
-axs[1].set_ylabel("Robot Heading (rad)")
-axs[1].set_title("Robot Frame Θ (rad) vs Time (s) ")
-axs[1].set(ylim=(-2*3.14159265, 2*3.14159265))
+plt.xlabel("Time (s)")
+plt.ylabel("Robot Heading (rad)")
+plt.title("Robot Frame Θ (rad) vs Time (s) ")
+plt.ylim(0, 2)
 
 plt.savefig(f"{file}.png")
 

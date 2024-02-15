@@ -35,3 +35,9 @@
     - a script for setting environment variables needed for running Vx applications
     - run this script before running botgui in a terminal on your laptop
     - run via `. setenv.sh` -- note the space
+
+### BREAK IN CASE OF GIT CORRUPTION
+// Backup your git repo \\
+find .git/objects/ -type f -empty | xargs rm
+git fetch -p
+git fsck --full
