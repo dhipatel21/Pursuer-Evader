@@ -6,16 +6,19 @@
 
 
 Mapping::Mapping(float maxLaserDistance, int8_t hitOdds, int8_t missOdds)
-: kMaxLaserDistance_(maxLaserDistance)
-, kHitOdds_(hitOdds)
-, kMissOdds_(missOdds)
+: kMaxLaserDistance_(maxLaserDistance), kHitOdds_(hitOdds), kMissOdds_(missOdds)
 {
+    pose_xyt_t previousPose_ = pose_xyt_t();
+    previousPose_.theta = 0;
+    previousPose_.x = 0;
+    previousPose_.y = 0;
+    previousPose_.utime = 0;
 }
 
 
-float inverse_sensor_model(float x, float y, float theta, float x1, float y1, float range) {
-    Point<int> pointA = {x, y};
-    Point<int> pointB = {x1, y1};
+CellOdds inverse_sensor_model(float x, float y, float theta, float x1, float y1, float range) {
+    Point<float> pointA = {x, y};
+    Point<float> pointB = {x1, y1};
 
     float r = distance_between_points(pointA, pointB);
     float phi = atan2(pointB.y - pointA.y, pointB.x - pointA.x) - theta;
@@ -42,73 +45,56 @@ float inverse_sensor_model(float x, float y, float theta, float x1, float y1, fl
     }
 }
 
+void scoreRay(const adjusted_ray_t& ray, OccupancyGrid& map)
+{
+    // Score the intervening grid squares of the ray, to edecrease likelihood of occupancy.
+    Point<int> origin;
+    Point<int> endpoint;
+
+    origin.x = (int)std::floor(ray.origin.x);
+    origin.y = (int)std::floor(ray.origin.y);
+
+    float end_x = ray.origin.x + ray.range*cos(ray.theta);
+    float end_y = ray.origin.y + ray.range*sin(ray.theta);
+    endpoint.x = (int)std::floor(end_x);
+    endpoint.y = (int)std::floor(end_y);
+
+    int dx = abs(endpoint.x - origin.x);
+    int dy = abs(endpoint.y - origin.y);
+    int sx = origin.x<endpoint.x ? 1 : -1;
+    int sy = origin.y<endpoint.y ? 1 : -1;
+    int err = dx - dy;
+    int x = origin.x;
+    int y = origin.y;
+
+    Point<float> current;
+    current.x = ray.origin.x;
+    current.y = ray.origin.y;
+
+    while (((x != endpoint.x) || (y != endpoint.y)) && (map.isCellInGrid(x, y))) {
+        CellOdds l_new = inverse_sensor_model(ray.origin.x, ray.origin.y, ray.theta, current.x, current.y, ray.range);
+        CellOdds l_curr = map.logOdds(x, y);
+        map.setLogOdds(x, y, l_curr + l_new);
+
+        int e2 = err * 2;
+        if (e2 >= -dy) {
+            err -= dy;
+            x += sx;
+        }
+        if (e2 <= dx) {
+            err += dx;
+            y += sy;
+        }
+    }
+}
 
 void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGrid& map)
 {
-    //////////////// TODO: Implement your occupancy grid algorithm here //////////////////////
+    MovingLaserScan movingScan(scan, previousPose_, pose, 1);
 
-    // Pseudo code From Lecture 07 slide 22 --> need to include movingScan
-    // MovingLaserScan movingScan(scan, previousPose, pose);
-
-    // for (auto& ray : movingScan) {
-    //     scoreEndpoint(ray, map);
-    // }
-
-    // for (auto& ray : movingScan) {
-    //     scoreRay(ray, map);
-    // }
-    // previousPose_ = pose;
-
-    // From Lecture 07 slide 11 --> needs to be fixed, include inverse sensor model?
-
-    float x = pose.x;
-    float y = pose.y;
-    float theta = pose.theta;
-
-    for (int i = 0; i < scan.num_ranges; ++i) {
-        float range = scan.ranges[i];
-        Point<float> endpoint;
-
-        endpoint.x = x + range * cos(pose.theta + scan.thetas[i]);
-        endpoint.y = y + range * sin(pose.theta + scan.thetas[i]);
-        int x1 = endpoint.x / map.metersPerCell();
-        int y1 = endpoint.y / map.metersPerCell();
-
-        // Bresenham's line algorithm
-        int dx = abs(x1 - x);
-        int dy = abs(y1 - y);
-        int sx = x < x1 ? 1 : -1;
-        int sy = y < y1 ? 1 : -1;
-        int err = dx - dy;
-
-        while (x1 != x || y1 != y) {
-            // Update odds
-            
-            int oldValue = map.logOdds(x, y);
-            int newValue = oldValue;
-
-            if (map.isCellInGrid(x, y)) {
-                newValue += inverse_sensor_model(x, y, theta, x1, y1, range) - log(map.logOdds(x, y) / (1 - map.logOdds(x, y)));
-                // keep logOdds in the range [-127, 127]
-                if (newValue > 127) {
-                    newValue = 127;
-                }
-                else if (newValue < -127) {
-                    newValue = -127;
-                }
-
-                map.setLogOdds(x, y, newValue);
-            }
-
-            int e2 = 2 * err;
-            if (e2 > -dy) {
-                err -= dy;
-                x += sx;
-            }
-            if (e2 < dx) {
-                err += dx;
-                y += sy;
-            }
-        }
+    for (auto& ray : movingScan) {
+        scoreRay(ray, map);
     }
+
+    previousPose_ = pose;
 }
