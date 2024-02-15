@@ -74,7 +74,9 @@ void scoreRay(const adjusted_ray_t& ray, OccupancyGrid& map)
     while (((x != endpoint.x) || (y != endpoint.y)) && (map.isCellInGrid(x, y))) {
         CellOdds l_new = inverse_sensor_model(ray.origin.x, ray.origin.y, ray.theta, current.x, current.y, ray.range);
         CellOdds l_curr = map.logOdds(x, y);
-        map.setLogOdds(x, y, l_curr + l_new);
+        if (!((l_curr + l_new < -127) || ((l_curr + l_new > 127)))) {
+            map.setLogOdds(x, y, l_curr + l_new);
+        }
 
         int e2 = err * 2;
         if (e2 >= -dy) {
