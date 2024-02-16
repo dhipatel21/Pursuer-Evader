@@ -1,10 +1,4 @@
-#include <slam/action_model.hpp>
-#include <lcmtypes/particle_t.hpp>
-#include <common/angle_functions.hpp>
-#include <cassert>
-#include <cmath>
-#include <iostream>
-
+#include "action_model.hpp"
 
 ActionModel::ActionModel(void)
 {
@@ -12,38 +6,56 @@ ActionModel::ActionModel(void)
     rot1 = 0;
     trans = 0;
     rot2 = 0;
+    time = 0;
+
+    eps1 = 0;
+    eps2 = 0;
+    eps3 = 0;
+
+    a1 = 1;
+    a2 = 1;
+    a3 = 1;
+    a4 = 1;
+
+    x_hat = 0;
+    y_hat = 0;
+    theta_hat = 0;
+
+    std::mt19937 gen(rd());
 }
 
 
 bool ActionModel::updateAction(const pose_xyt_t& odometry)
 {
     ////////////// TODO: Implement code here to compute a new distribution of the motion of the robot ////////////////
+    // We're using the odometry model here
     // !!!!!!!!!!!!!!!!!!!!!!!!!! 
     // Perform straight line to determine k1 k2 ????
     // !!!!!!!!!!!!!!!!!!!!!!!!!
 
-    float k1 = 1;
-    float k2 = 1;
+    float x_prime = odometry.x;
+    float y_prime = odometry.y;
+    float theta_prime = odometry.theta;
 
-    float delta_x = odometry.x;
-    float delta_y = odometry.y;
-    float delta_theta = odometry.theta;
-
-    float delta_rot1 = atan2(delta_y, delta_x);
-    float delta_trans = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
-    float delta_rot2 = delta_theta - delta_rot1;
+    float delta_rot1 = atan2(y_prime - y_hat, x_prime - x_hat) - theta_hat;
+    float delta_trans = sqrt(pow(x_prime - x_hat, 2) + pow(y_prime - y_hat, 2));
+    float delta_rot2 = theta_prime - theta_hat - delta_rot1;
 
     // Initialization for sampling normal distributions
-    std::random_device rd;
-    std::mt19937 gen(rd());
 
-    std::normal_distribution<float> norm1(0, k1*abs(rot1));
-    std::normal_distribution<float> norm2(0, k2*abs(trans));
-    std::normal_distribution<float> norm3(0, k1*abs(rot2));
+    std::normal_distribution<float> norm1(0, a1*pow(delta_rot1, 2) + a2*pow(delta_trans, 2));
+    std::normal_distribution<float> norm2(0, a3*pow(delta_trans, 2) + a4*pow(delta_rot1, 2) + a4*pow(delta_rot2, 2));
+    std::normal_distribution<float> norm3(0, a1*pow(delta_rot2, 2) + a2*pow(delta_trans, 2));
 
     rot1 = rot1 - norm1(gen);
     trans = trans - norm2(gen);
     rot2 = rot2 - norm3(gen);
+
+    x_hat = x_prime;
+    y_hat = y_prime;
+    theta_hat = theta_prime;
+
+    time = odometry.utime;
 
     return true;
 }
@@ -64,6 +76,7 @@ particle_t ActionModel::applyAction(const particle_t& sample)
     new_sample.pose.x = x_0 + (trans * cos(theta_0 + rot1));
     new_sample.pose.y = y_0 + (trans * sin(theta_0 + rot1));
     new_sample.pose.theta = theta_0 + rot1 + rot2;
+    new_sample.pose.utime = time;
 
     return new_sample;
 }
