@@ -47,9 +47,9 @@ bool ActionModel::updateAction(const pose_xyt_t& odometry)
     std::normal_distribution<float> norm2(0, a3*pow(delta_trans, 2) + a4*pow(delta_rot1, 2) + a4*pow(delta_rot2, 2));
     std::normal_distribution<float> norm3(0, a1*pow(delta_rot2, 2) + a2*pow(delta_trans, 2));
 
-    rot1 = rot1 - norm1(gen);
-    trans = trans - norm2(gen);
-    rot2 = rot2 - norm3(gen);
+    rot1 = delta_rot1 - norm1(gen);
+    trans = delta_trans - norm2(gen);
+    rot2 = delta_rot2 - norm3(gen);
 
     x_hat = x_prime;
     y_hat = y_prime;
