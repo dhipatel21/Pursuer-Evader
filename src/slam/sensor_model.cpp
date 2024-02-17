@@ -30,5 +30,5 @@ double SensorModel::likelihood(const particle_t& sample, const lidar_t& scan, co
     
    }
 
-    return log_likelihood;
+    return scanLikelihood;
 }

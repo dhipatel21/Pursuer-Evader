@@ -88,7 +88,7 @@ private:
     float theta_hat;
 
     // rng
-    std::random_device rd;
+    std::mt19937 gen;
 };
 
 #endif // SLAM_ACTION_MODEL_HPP
