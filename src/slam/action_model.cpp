@@ -12,9 +12,9 @@ ActionModel::ActionModel(void)
     eps2 = 0;
     eps3 = 0;
 
-    a1 = 0.0001;
+    a1 = 0.002;
     a2 = 0;
-    a3 = 0.0001;
+    a3 = 0.003;
     a4 = 0;
 
     x_hat = 0;
