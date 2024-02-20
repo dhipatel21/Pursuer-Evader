@@ -6,76 +6,71 @@
 
 
 Mapping::Mapping(float maxLaserDistance, int8_t hitOdds, int8_t missOdds)
-: kMaxLaserDistance_(maxLaserDistance), kHitOdds_(hitOdds), kMissOdds_(missOdds)
+: kMaxLaserDistance_(maxLaserDistance), kHitOdds_(hitOdds), kMissOdds_(missOdds), initialized_(false)
 {
-    pose_xyt_t previousPose_ = pose_xyt_t();
-    previousPose_.theta = 0;
-    previousPose_.x = 0;
-    previousPose_.y = 0;
-    previousPose_.utime = 0;
 }
 
 
-CellOdds inverse_sensor_model(float x, float y, float theta, float x1, float y1, float range) {
-    Point<float> pointA = {x, y};
-    Point<float> pointB = {x1, y1};
+// CellOdds Mapping::inverse_sensor_model(float x, float y, float theta, float x1, float y1, float range) {
+//     Point<float> pointA = {x, y};
+//     Point<float> pointB = {x1, y1};
 
-    float r = distance_between_points(pointA, pointB);
-    float phi = atan2(pointB.y - pointA.y, pointB.x - pointA.x) - theta;
-    float alpha = 0.1; // dimension of cell is 10x10 cm
-    float z_max = 10; // max allowable distance is 10 m (???? Might need to confirm this)
+//     float r = distance_between_points(pointA, pointB);
+//     float phi = atan2(pointB.y - pointA.y, pointB.x - pointA.x) - theta;
+//     float alpha = 0.1; // dimension of cell is 10x10 cm
+//     float z_max = 10; // max allowable distance is 10 m (???? Might need to confirm this)
 
-    // if the distance to the cell is greater than the maximum allowable range or the measured range
-    // then it is beyond an obstacle and/or unknown
-    if (r > std::min(z_max, range + alpha/2)) { 
-        return 0;
-    }
-    // if the measured range to obstacle is less than the maximum allowable range AND the difference
-    // between the measured range and the distance to that cell is ~0, then the cell is an obstacle
-    else if ((range < z_max) && (abs(r - range) < alpha/2)) { 
-        return 1;
-    }
-    // if distance to cell is less than measured range to obstacle, then it is unoccupied
-    else if (r <= range) {
-        return -1;
-    }
-    // return unkown if we don't hit any of the other cases 
-    else {
-        return 0;
-    }
-}
+//     // if the distance to the cell is greater than the maximum allowable range or the measured range
+//     // then it is beyond an obstacle and/or unknown
+//     if (r > std::min(z_max, range + alpha/2) || ) { 
+//         return 0;
+//     }
+//     // if the measured range to obstacle is less than the maximum allowable range AND the difference
+//     // between the measured range and the distance to that cell is ~0, then the cell is an obstacle
+//     else if ((range < z_max) && (abs(r - range) < alpha/2)) { 
+//         return kHitOdds_;
+//     }
+//     // if distance to cell is less than measured range to obstacle, then it is unoccupied
+//     else if (r <= range) {
+//         return -kMissOdds_;
+//     }
+//     // return unkown if we don't hit any of the other cases 
+//     else {
+//         return 0;
+//     }
+// }
 
-void scoreRay(const adjusted_ray_t& ray, OccupancyGrid& map)
+void Mapping::scoreRay(const adjusted_ray_t& ray, OccupancyGrid& map)
 {
     // Score the intervening grid squares of the ray, to edecrease likelihood of occupancy.
     Point<int> origin;
     Point<int> endpoint;
 
-    origin.x = (int)std::floor(ray.origin.x);
-    origin.y = (int)std::floor(ray.origin.y);
+    Point<float> rayStart = global_position_to_grid_cell(ray.origin, map);
 
-    float end_x = ray.origin.x + ray.range*cos(ray.theta);
-    float end_y = ray.origin.y + ray.range*sin(ray.theta);
-    endpoint.x = (int)std::floor(end_x);
-    endpoint.y = (int)std::floor(end_y);
+    endpoint.x = static_cast<int>(ray.range * std::cos(ray.theta) * map.cellsPerMeter() + rayStart.x);
+    endpoint.y = static_cast<int>(ray.range * std::sin(ray.theta) * map.cellsPerMeter() + rayStart.y);
 
-    int dx = abs(endpoint.x - origin.x);
-    int dy = abs(endpoint.y - origin.y);
-    int sx = origin.x<endpoint.x ? 1 : -1;
-    int sy = origin.y<endpoint.y ? 1 : -1;
+    int dx = abs(endpoint.x - rayStart.x);
+    int dy = abs(endpoint.y - rayStart.y);
+    int sx = rayStart.x<endpoint.x ? 1 : -1;
+    int sy = rayStart.y<endpoint.y ? 1 : -1;
     int err = dx - dy;
-    int x = origin.x;
-    int y = origin.y;
+    int x = rayStart.x;
+    int y = rayStart.y;
 
-    Point<float> current;
-    current.x = ray.origin.x;
-    current.y = ray.origin.y;
+
+    // std::cout << "origin x" << rayStart.x << " y " << rayStart.y << "\n\n";
+
+    // std::cout << "endpoint x" << endpoint.x << " y " << endpoint.y << "\n\n";
 
     while (((x != endpoint.x) || (y != endpoint.y)) && (map.isCellInGrid(x, y))) {
-        CellOdds l_new = inverse_sensor_model(ray.origin.x, ray.origin.y, ray.theta, current.x, current.y, ray.range);
-        CellOdds l_curr = map.logOdds(x, y);
-        if (!((l_curr + l_new < -127) || ((l_curr + l_new > 127)))) {
-            map.setLogOdds(x, y, l_curr + l_new);
+        std::cout << "x " << x << " y " << y << '\n';
+        if (map(x, y) - kMissOdds_ > -127) {
+            decreaseCellOdds(x, y, map);
+        }
+        else {
+            map(x, y) = 127;
         }
 
         int e2 = err * 2;
@@ -92,11 +87,47 @@ void scoreRay(const adjusted_ray_t& ray, OccupancyGrid& map)
 
 void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGrid& map)
 {
-    MovingLaserScan movingScan(scan, previousPose_, pose, 1);
+    if (!initialized_) {
+        previousPose_ = pose;
+    }
+    MovingLaserScan movingScan(scan, previousPose_, pose);
 
     for (auto& ray : movingScan) {
+        scoreEndpoint(ray, map);
         scoreRay(ray, map);
     }
-
+    initialized_ = true;
     previousPose_ = pose;
+}
+
+void Mapping::scoreEndpoint(const adjusted_ray_t& ray, OccupancyGrid& map) {
+    if (ray.range <= kMaxLaserDistance_) {
+        Point<float> rayStart = global_position_to_grid_cell(ray.origin, map);
+        Point<int> rayCell;
+
+        rayCell.x = static_cast<int>(ray.range * std::cos(ray.theta) * map.cellsPerMeter() + rayStart.x);
+        rayCell.y = static_cast<int>(ray.range * std::sin(ray.theta) * map.cellsPerMeter() + rayStart.y);
+
+        if (map.isCellInGrid(rayCell.x, rayCell.y)) {
+            increaseCellOdds(rayCell.x, rayCell.y, map);
+        }
+    }
+}
+
+void Mapping::decreaseCellOdds(int x, int y, OccupancyGrid& map) {
+    if (map(x, y) - std::numeric_limits<CellOdds>::min() > kMissOdds_) {
+        map(x, y) -= kMissOdds_;
+    }
+    else {
+        map(x, y) = std::numeric_limits<CellOdds>::min();
+    }
+}
+
+void Mapping::increaseCellOdds(int x, int y, OccupancyGrid& map) {
+    if (std::numeric_limits<CellOdds>::max() - map(x, y) > kHitOdds_) {
+        map(x, y) += kHitOdds_;
+    }
+    else {
+        map(x, y) = std::numeric_limits<CellOdds>::max();
+    }
 }

@@ -13,9 +13,9 @@ ActionModel::ActionModel(void)
     eps3 = 0;
 
     a1 = 1;
-    a2 = 1;
+    a2 = 0;
     a3 = 1;
-    a4 = 1;
+    a4 = 0;
 
     x_hat = 0;
     y_hat = 0;

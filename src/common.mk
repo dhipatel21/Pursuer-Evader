@@ -24,8 +24,8 @@ CONFIG_DIR   := $(shell pwd)/../../config
 CFLAGS_SHARED = -g -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_REENTRANT \
 		-Wall -Wno-unused-parameter -Wno-deprecated-declarations -pthread -fPIC -I$(SRC_PATH)
 
-CFLAGS_STD   := -std=gnu99 -Wno-format-zero-length $(CFLAGS_SHARED)
-CXXFLAGS_STD := -std=c++0x $(CFLAGS_SHARED)
+CFLAGS_STD   := -std=gnu99 -Wno-format-zero-length -ggdb $(CFLAGS_SHARED)
+CXXFLAGS_STD := -std=c++0x -ggdb $(CFLAGS_SHARED)
 LDFLAGS_STD  := -lm -lpthread
 
 CC           := gcc
