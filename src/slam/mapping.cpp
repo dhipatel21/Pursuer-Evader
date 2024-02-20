@@ -106,7 +106,7 @@ void Mapping::scoreEndpoint(const adjusted_ray_t& ray, OccupancyGrid& map) {
 
 void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGrid& map)
 {
-    std::cout << "update map" << '\n';
+    // std::cout << "update map" << '\n';
     if (!initialized_) {
         previousPose_ = pose;
     }
