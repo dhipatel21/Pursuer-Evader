@@ -43,6 +43,8 @@ Mapping::Mapping(float maxLaserDistance, int8_t hitOdds, int8_t missOdds)
 void Mapping::scoreRay(const adjusted_ray_t& ray, OccupancyGrid& map)
 {
     // Score the intervening grid squares of the ray, to edecrease likelihood of occupancy.
+    // std::cout << "score ray\n";
+
     Point<int> origin;
     Point<int> endpoint;
 
@@ -65,12 +67,13 @@ void Mapping::scoreRay(const adjusted_ray_t& ray, OccupancyGrid& map)
     // std::cout << "endpoint x" << endpoint.x << " y " << endpoint.y << "\n\n";
 
     while (((x != endpoint.x) || (y != endpoint.y)) && (map.isCellInGrid(x, y))) {
-        std::cout << "x " << x << " y " << y << '\n';
-        if (map(x, y) - kMissOdds_ > -127) {
+        // std::cout << "x " << x << " y " << y << '\n';
+        // std::cout << "min odds " << std::numeric_limits<CellOdds>::min() << " max odds " << std::numeric_limits<CellOdds>::max() << '\n';
+        if (map(x, y) - kMissOdds_ > std::numeric_limits<CellOdds>::min()) {
             decreaseCellOdds(x, y, map);
         }
         else {
-            map(x, y) = 127;
+            map(x, y) = std::numeric_limits<CellOdds>::min();
         }
 
         int e2 = err * 2;
@@ -85,22 +88,9 @@ void Mapping::scoreRay(const adjusted_ray_t& ray, OccupancyGrid& map)
     }
 }
 
-void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGrid& map)
-{
-    if (!initialized_) {
-        previousPose_ = pose;
-    }
-    MovingLaserScan movingScan(scan, previousPose_, pose);
-
-    for (auto& ray : movingScan) {
-        scoreEndpoint(ray, map);
-        scoreRay(ray, map);
-    }
-    initialized_ = true;
-    previousPose_ = pose;
-}
-
 void Mapping::scoreEndpoint(const adjusted_ray_t& ray, OccupancyGrid& map) {
+    // std::cout << "score endpoint\n";
+
     if (ray.range <= kMaxLaserDistance_) {
         Point<float> rayStart = global_position_to_grid_cell(ray.origin, map);
         Point<int> rayCell;
@@ -114,8 +104,24 @@ void Mapping::scoreEndpoint(const adjusted_ray_t& ray, OccupancyGrid& map) {
     }
 }
 
+void Mapping::updateMap(const lidar_t& scan, const pose_xyt_t& pose, OccupancyGrid& map)
+{
+    std::cout << "update map" << '\n';
+    if (!initialized_) {
+        previousPose_ = pose;
+    }
+    MovingLaserScan movingScan(scan, previousPose_, pose);
+
+    for (auto& ray : movingScan) {
+        scoreEndpoint(ray, map);
+        scoreRay(ray, map);
+    }
+    initialized_ = true;
+    previousPose_ = pose;
+}
+
 void Mapping::decreaseCellOdds(int x, int y, OccupancyGrid& map) {
-    if (map(x, y) - std::numeric_limits<CellOdds>::min() > kMissOdds_) {
+    if (map(x, y) - kMissOdds_  > std::numeric_limits<CellOdds>::min()) {
         map(x, y) -= kMissOdds_;
     }
     else {
@@ -124,7 +130,7 @@ void Mapping::decreaseCellOdds(int x, int y, OccupancyGrid& map) {
 }
 
 void Mapping::increaseCellOdds(int x, int y, OccupancyGrid& map) {
-    if (std::numeric_limits<CellOdds>::max() - map(x, y) > kHitOdds_) {
+    if (map(x, y) + kHitOdds_ < std::numeric_limits<CellOdds>::max()) {
         map(x, y) += kHitOdds_;
     }
     else {

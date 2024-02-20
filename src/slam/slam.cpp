@@ -194,13 +194,16 @@ void OccupancyGridSLAM::runSLAMIteration(void)
     initializePosesIfNeeded();
     
     // Sanity check the laser data to see if rplidar_driver has lost sync
+    std::cout << "considering whether to update...\n";
     if(currentScan_.num_ranges > 100)//250)
     {
+        std::cout << "proceed with map update...\n";
         updateLocalization();
         updateMap();
     }
     else 
     {
+        std::cout << "ERROR: Update rejected!\n";
         std::cerr << "ERROR: OccupancyGridSLAM: Detected invalid laser scan with " << currentScan_.num_ranges 
             << " ranges.\n";
     }
@@ -275,6 +278,7 @@ void OccupancyGridSLAM::updateMap(void)
 {
     if(mode_ != localization_only && mode_ != action_only)
     {
+        std::cout << "Mode allows for map update!\n";
         // Process the map
         mapper_.updateMap(currentScan_, currentPose_, map_);
         haveMap_ = true;
