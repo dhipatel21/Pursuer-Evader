@@ -5,7 +5,6 @@
 #include <cmath>
 #include <iostream>
 
-
 ActionModel::ActionModel(void) :
     //////////////// TODO: Handle any initialization for your ActionModel /////////////////////////
     k1_(0.01f),
