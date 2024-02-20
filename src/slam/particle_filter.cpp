@@ -27,9 +27,6 @@ void ParticleFilter::initializeFilterAtPose(const pose_xyt_t& pose)
         p.parent_pose = p.pose;
         p.weight = sampleWeight;
     }
-
-    std::random_device rd;
-    generator = std::mt19937(rd());
 }
 
 
@@ -95,6 +92,8 @@ std::vector<particle_t> ParticleFilter::resamplePosteriorDistribution(void)
     
     std::vector<particle_t> prior = posterior_;
     double sampleWeight = 1.0/kNumParticles_;
+    std::random_device rd;
+    std::mt19937 generator(rd());
     std::normal_distribution<> dist(0.0, 0.04);
 
     for (auto& p : prior) {

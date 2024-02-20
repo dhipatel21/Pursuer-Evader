@@ -1,64 +1,62 @@
-#include "action_model.hpp"
+#include <slam/action_model.hpp>
+#include <lcmtypes/particle_t.hpp>
+#include <common/angle_functions.hpp>
+#include <cassert>
+#include <cmath>
+#include <iostream>
 
-ActionModel::ActionModel(void)
-{
+
+ActionModel::ActionModel(void) :
     //////////////// TODO: Handle any initialization for your ActionModel /////////////////////////
-    rot1 = 0;
-    trans = 0;
-    rot2 = 0;
-    time = 0;
-
-    eps1 = 0;
-    eps2 = 0;
-    eps3 = 0;
-
-    a1 = 0.002;
-    a2 = 0;
-    a3 = 0.003;
-    a4 = 0;
-
-    x_hat = 0;
-    y_hat = 0;
-    theta_hat = 0;
-
+    k1_(0.01f),
+    k2_(0.01f),
+    
+    initialized_(false)
+{
     std::random_device rd;
-    gen = std::mt19937(rd());
+    numberGenerator_ = std::mt19937(rd());
 }
 
 
 bool ActionModel::updateAction(const pose_xyt_t& odometry)
 {
     ////////////// TODO: Implement code here to compute a new distribution of the motion of the robot ////////////////
-    // We're using the odometry model here
     // !!!!!!!!!!!!!!!!!!!!!!!!!! 
     // Perform straight line to determine k1 k2 ????
     // !!!!!!!!!!!!!!!!!!!!!!!!!
+    if (!initialized_) {
+        previousPose_ = odometry;
+        initialized_ = true;
+    }
 
-    float x_prime = odometry.x;
-    float y_prime = odometry.y;
-    float theta_prime = odometry.theta;
+    float deltaX = odometry.x - previousPose_.x;
+    float deltaY = odometry.y - previousPose_.y;
+    float deltaTheta = angle_diff(odometry.theta, previousPose_.theta);
+    float direction = 1.0;
 
-    float delta_rot1 = atan2(y_prime - y_hat, x_prime - x_hat) - theta_hat;
-    float delta_trans = sqrt(pow(x_prime - x_hat, 2) + pow(y_prime - y_hat, 2));
-    float delta_rot2 = theta_prime - theta_hat - delta_rot1;
+    trans_ = std::sqrt(deltaX * deltaX + deltaY * deltaY);
+    rot1_ = angle_diff(std::atan2(deltaY, deltaX), previousPose_.theta);
 
-    // Initialization for sampling normal distributions
+    if (std::abs(rot1_) > M_PI_2) {
+        rot1_ = angle_diff(M_PI, rot1_);
+        direction = -1.0;
+    }
 
-    float norm1 = std::normal_distribution<>(0, a1*pow(delta_rot1, 2) + a2*pow(delta_trans, 2))(gen);
-    float norm2 = std::normal_distribution<>(0, a3*pow(delta_trans, 2) + a4*pow(delta_rot1, 2) + a4*pow(delta_rot2, 2))(gen);
-    float norm3 = std::normal_distribution<>(0, a1*pow(delta_rot2, 2) + a2*pow(delta_trans, 2))(gen);
+    rot2_ = angle_diff(deltaTheta, rot1_);
 
-    rot1 = delta_rot1 - norm1;
-    trans = delta_trans - norm2;
-    rot2 = delta_rot2 - norm3;
+    bool moved = (deltaX != 0) || (deltaY != 0) || (deltaTheta != 0);
 
-    x_hat = x_prime;
-    y_hat = y_prime;
-    theta_hat = theta_prime;
+    if (moved) {
+        rot1Std_ = std::sqrt(k1_ * std::abs(rot1_));
+        tranStd_ = std::sqrt(k2_ * std::abs(trans_));
+        rot2Std_ = std::sqrt(k1_ * std::abs(rot2_));
+    }
 
-    time = odometry.utime;
-
-    return true;
+    utime_ = odometry.utime;
+    previousPose_ = odometry;
+    trans_ *= direction;
+    
+    return moved;
 }
 
 
@@ -67,17 +65,16 @@ particle_t ActionModel::applyAction(const particle_t& sample)
     ////////////// TODO: Implement your code for sampling new poses from the distribution computed in updateAction //////////////////////
     
     // Make sure you create a new valid particle_t. Don't forget to set the new time and new parent_pose.
-    particle_t new_sample;
-    new_sample.parent_pose = sample.pose;
+    particle_t newSample = sample;
+    float sampleRot1 = std::normal_distribution<>(rot1_, rot1Std_)(numberGenerator_);
+    float sampleRot2 = std::normal_distribution<>(rot2_, rot2Std_)(numberGenerator_);
+    float sampleTrans = std::normal_distribution<>(trans_, tranStd_)(numberGenerator_);
 
-    float x_0 = new_sample.parent_pose.x;
-    float y_0 = new_sample.parent_pose.y;
-    float theta_0 = new_sample.parent_pose.theta;
+    newSample.pose.x += sampleTrans * std::cos(sample.pose.theta + sampleRot1);
+    newSample.pose.y += sampleTrans * std::sin(sample.pose.theta + sampleRot1);
+    newSample.pose.theta = wrap_to_pi(sample.pose.theta + sampleRot1 + sampleRot2);
+    newSample.pose.utime = utime_;
+    newSample.parent_pose = sample.pose;
 
-    new_sample.pose.x = x_0 + (trans * cos(theta_0 + rot1));
-    new_sample.pose.y = y_0 + (trans * sin(theta_0 + rot1));
-    new_sample.pose.theta = theta_0 + rot1 + rot2;
-    new_sample.pose.utime = time;
-
-    return new_sample;
+    return newSample;
 }

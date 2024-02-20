@@ -94,7 +94,7 @@ private:
     pose_xyt_t estimatePosteriorPose(const std::vector<particle_t>& posterior);
 
     // rng
-    std::mt19937 generator;
+    // std::mt19937 generator;
 };
 
 #endif // SLAM_PARTICLE_FILTER_HPP

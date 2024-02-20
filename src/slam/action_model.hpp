@@ -3,12 +3,6 @@
 
 #include <lcmtypes/pose_xyt_t.hpp>
 #include <random>
-#include <slam/action_model.hpp>
-#include <lcmtypes/particle_t.hpp>
-#include <common/angle_functions.hpp>
-#include <cassert>
-#include <cmath>
-#include <iostream>
 
 struct particle_t;
 
@@ -41,8 +35,6 @@ public:
     ActionModel(void);
     
     /**
-     * // TLDR: call this every time you get more odometry data to keep action up to date.
-     * 
     * updateAction sets up the motion model for the current update for the localization.
     * After initialization, calls to applyAction() will be made, so all distributions based on sensor data
     * should be created here.
@@ -53,8 +45,6 @@ public:
     bool updateAction(const pose_xyt_t& odometry);
     
     /**
-     * // TLDR: call this every time you actually want to generate a new action sample and realize the updates made.
-     * 
     * applyAction applies the motion to the provided sample and returns a new sample that
     * can be part of the proposal distribution for the particle filter.
     *
@@ -66,29 +56,27 @@ public:
 private:
     
     ////////// TODO: Add private member variables needed for you implementation ///////////////////
-    float rot1;  // alpha or first rotation
-    float trans; // delta s or translation
-    float rot2;  // delta theta minus alpha or second rotation
-    float time; // current time of sample
 
     // samples from normal distribution, representing errors
     float eps1;
     float eps2;
     float eps3;
 
-    // a-values
-    float a1; // k1
-    float a2; // cross correlation
-    float a3; // k3
-    float a4; // cross correlation
+    const float k1_;
+    const float k2_;
 
-    // previous state
-    float x_hat;
-    float y_hat;
-    float theta_hat;
+    pose_xyt_t previousPose_;
+    double rot1_;
+    double trans_; // delta s or translation
+    double rot2_;  // delta theta minus alpha or second rotation
+    uint64_t utime_;
 
-    // rng
-    std::mt19937 gen;
+    bool initialized_;
+    std::mt19937 numberGenerator_;
+
+    float rot1Std_;
+    float tranStd_;
+    float rot2Std_;
 };
 
 #endif // SLAM_ACTION_MODEL_HPP
