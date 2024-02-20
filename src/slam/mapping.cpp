@@ -48,10 +48,12 @@ void Mapping::scoreRay(const adjusted_ray_t& ray, OccupancyGrid& map)
     Point<int> origin;
     Point<int> endpoint;
 
-    Point<float> rayStart = global_position_to_grid_cell(ray.origin, map);
+    Point<int> rayStart = global_position_to_grid_cell(ray.origin, map);
+    Point<double> endpointPos;
 
-    endpoint.x = static_cast<int>(ray.range * std::cos(ray.theta) * map.cellsPerMeter() + rayStart.x);
-    endpoint.y = static_cast<int>(ray.range * std::sin(ray.theta) * map.cellsPerMeter() + rayStart.y);
+    endpointPos.x = ray.range * std::cos(ray.theta) + ray.origin.x;
+    endpointPos.y = ray.range * std::sin(ray.theta) + ray.origin.y;
+    endpoint = global_position_to_grid_cell(endpointPos, map);
 
     int dx = abs(endpoint.x - rayStart.x);
     int dy = abs(endpoint.y - rayStart.y);
@@ -92,11 +94,12 @@ void Mapping::scoreEndpoint(const adjusted_ray_t& ray, OccupancyGrid& map) {
     // std::cout << "score endpoint\n";
 
     if (ray.range <= kMaxLaserDistance_) {
-        Point<float> rayStart = global_position_to_grid_cell(ray.origin, map);
-        Point<int> rayCell;
+        Point<int> rayStart = global_position_to_grid_cell(ray.origin, map);
+        Point<double> rayEnd;
 
-        rayCell.x = static_cast<int>(ray.range * std::cos(ray.theta) * map.cellsPerMeter() + rayStart.x);
-        rayCell.y = static_cast<int>(ray.range * std::sin(ray.theta) * map.cellsPerMeter() + rayStart.y);
+        rayEnd.x = ray.range * std::cos(ray.theta) + ray.origin.x;
+        rayEnd.y = ray.range * std::sin(ray.theta) + ray.origin.y;
+        Point<int> rayCell = global_position_to_grid_cell(rayEnd, map);
 
         if (map.isCellInGrid(rayCell.x, rayCell.y)) {
             increaseCellOdds(rayCell.x, rayCell.y, map);
