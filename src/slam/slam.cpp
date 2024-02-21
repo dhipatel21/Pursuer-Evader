@@ -4,7 +4,6 @@
 #include <optitrack/optitrack_channels.h>
 #include <unistd.h>
 #include <cassert>
-#include <chrono>
 
 OccupancyGridSLAM::OccupancyGridSLAM(int         numParticles,
                                      int8_t      hitOddsIncrease,
@@ -25,6 +24,10 @@ OccupancyGridSLAM::OccupancyGridSLAM(int         numParticles,
 , lcm_(lcmComm)
 , mapUpdateCount_(0)
 {
+    ofile_time.open("out_time.txt");
+    ofile_poseTruth.open("out_poseTruth.txt");
+    ofile_poseSLAM.open("out_poseSLAM.txt");
+
     // Confirm that the mode is valid -- mapping-only and localization-only are not specified
     assert(!(mappingOnlyMode && localizationOnlyMap.length() > 0));
     
@@ -145,6 +148,7 @@ void OccupancyGridSLAM::handlePose(const lcm::ReceiveBuffer* rbuf, const std::st
 {
     std::lock_guard<std::mutex> autoLock(dataMutex_);
     groundTruthPoses_.addPose(*pose);
+    ofile_poseTruth << "t|" << currentTruthPose_.utime << "|x|" << currentTruthPose_.x << "|y|" << currentTruthPose_.y  << "|theta|" << currentTruthPose_.theta << "\n";
 }
 
 
@@ -157,6 +161,8 @@ void OccupancyGridSLAM::handleOptitrack(const lcm::ReceiveBuffer* rbuf, const st
         initialPose_ = *pose;
         waitingForOptitrack_ = false;
     }
+
+    ofile_poseTruth << "t|" << currentTruthPose_.utime << "|x|" << currentTruthPose_.x << "|y|" << currentTruthPose_.y  << "|theta|" << currentTruthPose_.theta << "\n";
 }
 
 
@@ -259,11 +265,24 @@ void OccupancyGridSLAM::updateLocalization(void)
     {
         previousPose_ = currentPose_;
         if(mode_ == action_only){
+            // TODO characterize
+            auto start = std::chrono::high_resolution_clock::now();
             currentPose_  = filter_.updateFilterActionOnly(currentOdometry_);
+            auto stop = std::chrono::high_resolution_clock::now();
+            auto dt = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
+            ofile_time << dt.count() << '\n';
+            // TODO end characterize
         }
         else{
+            // TODO characterize
+            auto start = std::chrono::high_resolution_clock::now();
             currentPose_  = filter_.updateFilter(currentOdometry_, currentScan_, map_);
+            auto stop = std::chrono::high_resolution_clock::now();
+            auto dt = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
+            ofile_time << dt.count() << '\n';
+            // TODO end characterize
         }
+        ofile_poseSLAM << "t|" << currentPose_.utime << "|x|" << currentPose_.x << "|y|" << currentPose_.y  << "|theta|" << currentPose_.theta << "\n";
         
         auto particles = filter_.particles();
 

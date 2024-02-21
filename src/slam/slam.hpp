@@ -12,6 +12,9 @@
 #include <lcm/lcm-cpp.hpp>
 #include <deque>
 #include <mutex>
+#include <chrono>
+#include <iostream>                                                           
+#include <fstream>    
 
 /**
 * OccupancyGridSLAM runs on a thread and handles mapping.
@@ -56,10 +59,10 @@ public:
     
     
     // Handlers for LCM messages
-    void handleLaser   (const lcm::ReceiveBuffer* rbuf, const std::string& channel, const lidar_t* scan);
-    void handleOdometry(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const odometry_t* odometry);
-    void handlePose    (const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* pose);
-    void handleOptitrack(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* pose);
+    void handleLaser        (const lcm::ReceiveBuffer* rbuf, const std::string& channel, const lidar_t* scan);
+    void handleOdometry     (const lcm::ReceiveBuffer* rbuf, const std::string& channel, const odometry_t* odometry);
+    void handlePose         (const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* pose);
+    void handleOptitrack    (const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* pose);
 
 private:
     
@@ -82,6 +85,8 @@ private:
     std::deque<lidar_t> incomingScans_;
     PoseTrace groundTruthPoses_;
     PoseTrace odometryPoses_;
+
+    pose_xyt_t currentTruthPose_;
     
     // Data being used for current SLAM iteration
     lidar_t currentScan_;
@@ -99,6 +104,10 @@ private:
     int mapUpdateCount_;  // count so we only send the map occasionally, as it takes lots of bandwidth
     
     std::mutex dataMutex_;
+
+    std::ofstream ofile_time;
+    std::ofstream ofile_poseTruth;
+    std::ofstream ofile_poseSLAM;
 
     bool isReadyToUpdate      (void);
     void runSLAMIteration     (void);
