@@ -58,9 +58,6 @@ private:
     ////////// TODO: Add private member variables needed for you implementation ///////////////////
 
     // samples from normal distribution, representing errors
-    float eps1;
-    float eps2;
-    float eps3;
 
     const float k1_;
     const float k2_;

@@ -57,8 +57,8 @@ void Mapping::scoreRay(const adjusted_ray_t& ray, OccupancyGrid& map)
 
     int dx = abs(endpoint.x - rayStart.x);
     int dy = abs(endpoint.y - rayStart.y);
-    int sx = rayStart.x<endpoint.x ? 1 : -1;
-    int sy = rayStart.y<endpoint.y ? 1 : -1;
+    int sx = rayStart.x < endpoint.x ? 1 : -1;
+    int sy = rayStart.y < endpoint.y ? 1 : -1;
     int err = dx - dy;
     int x = rayStart.x;
     int y = rayStart.y;
@@ -94,7 +94,7 @@ void Mapping::scoreEndpoint(const adjusted_ray_t& ray, OccupancyGrid& map) {
     // std::cout << "score endpoint\n";
 
     if (ray.range <= kMaxLaserDistance_) {
-        Point<int> rayStart = global_position_to_grid_cell(ray.origin, map);
+        // Point<int> rayStart = global_position_to_grid_cell(ray.origin, map);
         Point<double> rayEnd;
 
         rayEnd.x = ray.range * std::cos(ray.theta) + ray.origin.x;
