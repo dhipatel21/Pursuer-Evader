@@ -106,6 +106,7 @@ private:
     std::mutex dataMutex_;
 
     std::ofstream ofile_time;
+    std::ofstream ofile_odom;
     std::ofstream ofile_poseTruth;
     std::ofstream ofile_poseSLAM;
 

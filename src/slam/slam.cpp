@@ -24,6 +24,7 @@ OccupancyGridSLAM::OccupancyGridSLAM(int         numParticles,
 , lcm_(lcmComm)
 , mapUpdateCount_(0)
 {
+    ofile_odom.open("out_odom.txt");
     ofile_time.open("out_time.txt");
     ofile_poseTruth.open("out_poseTruth.txt");
     ofile_poseSLAM.open("out_poseSLAM.txt");
@@ -141,6 +142,7 @@ void OccupancyGridSLAM::handleOdometry(const lcm::ReceiveBuffer* rbuf, const std
     odomPose.y = odometry->y;
     odomPose.theta = odometry->theta;
     odometryPoses_.addPose(odomPose);
+    ofile_odom << "t|" << odomPose.utime << "|x|" << odomPose.x << "|y|" << odomPose.y  << "|theta|" << odomPose.theta << std::endl;
 }
 
 
@@ -149,8 +151,8 @@ void OccupancyGridSLAM::handlePose(const lcm::ReceiveBuffer* rbuf, const std::st
     std::lock_guard<std::mutex> autoLock(dataMutex_);
     groundTruthPoses_.addPose(*pose);
 
-    std::cout << "printing pose truth\n";
-    ofile_poseTruth << "t|" << currentTruthPose_.utime << "|x|" << currentTruthPose_.x << "|y|" << currentTruthPose_.y  << "|theta|" << currentTruthPose_.theta << "\n";
+    // std::cout << "printing pose truth\n";
+    ofile_poseTruth << "t|" << (*pose).utime << "|x|" << (*pose).x << "|y|" << (*pose).y  << "|theta|" << (*pose).theta << std::endl;
 }
 
 
@@ -164,8 +166,8 @@ void OccupancyGridSLAM::handleOptitrack(const lcm::ReceiveBuffer* rbuf, const st
         waitingForOptitrack_ = false;
     }
 
-    std::cout << "printing pose truth\n";
-    ofile_poseTruth << "t|" << currentTruthPose_.utime << "|x|" << currentTruthPose_.x << "|y|" << currentTruthPose_.y  << "|theta|" << currentTruthPose_.theta << "\n";
+    // std::cout << "printing pose truth\n";
+    ofile_poseTruth << "t|" << (*pose).utime << "|x|" << (*pose).x << "|y|" << (*pose).y  << "|theta|" << (*pose).theta << std::endl;
 }
 
 
@@ -274,7 +276,8 @@ void OccupancyGridSLAM::updateLocalization(void)
             auto stop = std::chrono::high_resolution_clock::now();
             using delta_time = std::chrono::duration<float, std::micro>;
             auto dt = std::chrono::duration_cast<delta_time>(stop-start).count();
-            ofile_time << dt << "\n";
+            ofile_time << dt << std::endl;
+            std::cout << dt << std::endl;
             // TODO end characterize
         }
         else{
@@ -284,10 +287,11 @@ void OccupancyGridSLAM::updateLocalization(void)
             auto stop = std::chrono::high_resolution_clock::now();
             using delta_time = std::chrono::duration<float, std::micro>;
             auto dt = std::chrono::duration_cast<delta_time>(stop-start).count();
-            ofile_time << dt << '\n';
+            ofile_time << dt << std::endl;
+            std::cout << dt << std::endl;
             // TODO end characterize
         }
-        ofile_poseSLAM << "t|" << currentPose_.utime << "|x|" << currentPose_.x << "|y|" << currentPose_.y  << "|theta|" << currentPose_.theta << "\n";
+        ofile_poseSLAM << "t|" << currentPose_.utime << "|x|" << currentPose_.x << "|y|" << currentPose_.y  << "|theta|" << currentPose_.theta << std::endl;
         
         auto particles = filter_.particles();
 
