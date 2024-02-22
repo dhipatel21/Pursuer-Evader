@@ -148,6 +148,8 @@ void OccupancyGridSLAM::handlePose(const lcm::ReceiveBuffer* rbuf, const std::st
 {
     std::lock_guard<std::mutex> autoLock(dataMutex_);
     groundTruthPoses_.addPose(*pose);
+
+    std::cout << "printing pose truth\n";
     ofile_poseTruth << "t|" << currentTruthPose_.utime << "|x|" << currentTruthPose_.x << "|y|" << currentTruthPose_.y  << "|theta|" << currentTruthPose_.theta << "\n";
 }
 
@@ -162,6 +164,7 @@ void OccupancyGridSLAM::handleOptitrack(const lcm::ReceiveBuffer* rbuf, const st
         waitingForOptitrack_ = false;
     }
 
+    std::cout << "printing pose truth\n";
     ofile_poseTruth << "t|" << currentTruthPose_.utime << "|x|" << currentTruthPose_.x << "|y|" << currentTruthPose_.y  << "|theta|" << currentTruthPose_.theta << "\n";
 }
 
@@ -269,8 +272,9 @@ void OccupancyGridSLAM::updateLocalization(void)
             auto start = std::chrono::high_resolution_clock::now();
             currentPose_  = filter_.updateFilterActionOnly(currentOdometry_);
             auto stop = std::chrono::high_resolution_clock::now();
-            auto dt = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-            ofile_time << dt.count() << '\n';
+            using delta_time = std::chrono::duration<float, std::micro>;
+            auto dt = std::chrono::duration_cast<delta_time>(stop-start).count();
+            ofile_time << dt << "\n";
             // TODO end characterize
         }
         else{
@@ -278,8 +282,9 @@ void OccupancyGridSLAM::updateLocalization(void)
             auto start = std::chrono::high_resolution_clock::now();
             currentPose_  = filter_.updateFilter(currentOdometry_, currentScan_, map_);
             auto stop = std::chrono::high_resolution_clock::now();
-            auto dt = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-            ofile_time << dt.count() << '\n';
+            using delta_time = std::chrono::duration<float, std::micro>;
+            auto dt = std::chrono::duration_cast<delta_time>(stop-start).count();
+            ofile_time << dt << '\n';
             // TODO end characterize
         }
         ofile_poseSLAM << "t|" << currentPose_.utime << "|x|" << currentPose_.x << "|y|" << currentPose_.y  << "|theta|" << currentPose_.theta << "\n";
