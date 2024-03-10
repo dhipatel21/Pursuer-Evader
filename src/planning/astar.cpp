@@ -21,7 +21,7 @@ robot_path_t search_for_path(pose_xyt_t start,
 
 double h_cost(Node* from, Node* goal, const ObstacleDistanceGrid& distances) {
     int dx = std::abs(goal->cell.x - from->cell.x);
-    int dy = std::abs(goal->cell.y, from->cell.y);
+    int dy = std::abs(goal->cell.y - from->cell.y);
     double diag_distance = 1.414;
 
     double h_cost = (dx+dy) + (diag_distance - 2) * std::min(dx,dy);
@@ -45,7 +45,7 @@ std::vector<Node*> expand_node(Node* node, const ObstacleDistanceGrid* distances
         if(!distances->isCellInGrid(cell_x, cell_y))
             continue;
         
-        if(distances(cell_x, cell_y) <= params.minDistanceToObstacle)
+        if((*distances)(cell_x, cell_y) <= params.minDistanceToObstacle)
             continue;
 
         children.push_back(childNode);
@@ -61,7 +61,7 @@ std::vector<Node*> prune_node_path(std::vector<Node*> nodePath) {
 
 }
 
-std::vector<pose_xyz_t> extract_pose_path(std::vector<Node*> nodes, const ObstacleDistanceGrid& distances) {
+std::vector<pose_xyt_t> extract_pose_path(std::vector<Node*> nodes, const ObstacleDistanceGrid& distances) {
 
 }
 
@@ -76,5 +76,5 @@ Node* get_from_list(Node* node, std::vector<Node*> list) {
     for (auto &&item : list) {
         if(*node == *item) return item;
     }
-    return NULL:
+    return NULL;
 }

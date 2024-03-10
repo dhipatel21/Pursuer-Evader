@@ -1,8 +1,6 @@
 #include <planning/obstacle_distance_grid.hpp>
 #include <slam/occupancy_grid.hpp>
 
-#include <queue>
-
 ObstacleDistanceGrid::ObstacleDistanceGrid(void)
 : width_(0)
 , height_(0)
@@ -11,55 +9,80 @@ ObstacleDistanceGrid::ObstacleDistanceGrid(void)
 {
 }
 
+void ObstacleDistanceGrid::initializeDistances(const OccupancyGrid& map)
+{
+    int width = map.widthInCells();
+    int height = map.heightInCells();
+
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            if (map.logOdds(x, y) < 0) {
+                distance(x, y) = -1.0f;
+            }
+            else {
+                distance(x, y) = 0.0;
+            }
+        }
+    }
+}
+
+bool ObstacleDistanceGrid::is_cell_free(cell_t cell, const OccupancyGrid& map)
+{
+    return map.logOdds(cell.x, cell.y) < 0;
+}
+
+bool ObstacleDistanceGrid::is_cell_occupied(cell_t cell, const OccupancyGrid& map)
+{
+    return map.logOdds(cell.x, cell.y) >= 0;
+}
 
 void ObstacleDistanceGrid::setDistances(const OccupancyGrid& map)
 {
     resetGrid(map);
     
     ///////////// TODO: Implement an algorithm to mark the distance to the nearest obstacle for every cell in the map.
+    initializeDistances(map);
 
-    // BRUSHFIRE ALGORITHM
+    std::priority_queue<DistanceNode> searchQueue;
+    enqueue_obstacle_cells(map, searchQueue);
 
-    std::queue<std::pair<int, int>> Queue;
-    int dr[] = {-1, 1, 0, 0};
-    int dc[] = {0, 0, -1, 1};
-
-    // Set distance to all obstacles to 0
-
-    for (int x = 0; x < width_; ++x){ // Loop through all cells in OccupancyGrid
-        for (int y = 0; y < height_; ++y){
-            cells_.push_back(-1);
-            
-            if (map.logOdds(x, y) > 0){ // if obstacle at x, y
-                int index = cellIndex(x, y);
-                distance(x, y) = 0;
-                Queue.push({x, y});
-            }
-
-        }
+    while (!(searchQueue.empty())) {
+        auto nextNode = searchQueue.top();
+        searchQueue.pop();
+        expand_node(nextNode, searchQueue);
     }
+}
 
-    // Wavefront propogation
-    while (!Queue.empty()){
-        std::pair<int, int> coords = Queue.front();
-        int x = coords.first;
-        int y = coords.second;
-        Queue.pop();
+void ObstacleDistanceGrid::enqueue_obstacle_cells(const OccupancyGrid& map, std::priority_queue<DistanceNode>& search_queue) {
+    int width = map.widthInCells();
+    int height = map.heightInCells();
+    cell_t cell;
 
-        // Explore neighbors
-        for (int i = 0; i < 4; ++i){
-            int newX= x + dr[i];
-            int newY = y + dc[i];
-
-            // If cell is in grid and unvisited
-            if (isCellInGrid(newX, newY) 
-                && distance(newX, newY) == -1) {
-                distance(newX, newY) = distance(x, y) + 1;
+    for(cell.y = 0; cell.y < height; ++cell.y) {
+        for(cell.x = 0; cell.x < width; ++cell.x) {
+            if (is_cell_occupied(cell, map)) {
+                expand_node(DistanceNode(cell, 0), search_queue);
             }
         }
     }
 }
 
+void ObstacleDistanceGrid::expand_node(DistanceNode node, std::priority_queue<DistanceNode>& search_queue) {
+    // 8-way expansion
+    const int xDeltas[8] = {1, -1, 0, 0, 1, -1, 1, -1};
+    const int yDeltas[8] = {0, 0, 1, -1, 1, -1, -1, 1};
+
+    for (int n = 0; n < 8; ++n) {
+        cell_t adjacentCell(node.cell.x + xDeltas[n], node.cell.y + yDeltas[n]);
+        if (isCellInGrid(adjacentCell.x, adjacentCell.y)) {
+            if(cells_[cellIndex(adjacentCell.x, adjacentCell.y)] == -1.0) {
+                DistanceNode adjacentNode(adjacentCell, node.distance+1);
+                cells_[cellIndex(adjacentCell.x, adjacentCell.y)] = adjacentNode.distance * metersPerCell();
+                search_queue.push(adjacentNode);
+            }
+        }
+    }
+}
 
 bool ObstacleDistanceGrid::isCellInGrid(int x, int y) const
 {
