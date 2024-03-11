@@ -87,8 +87,13 @@ double h_cost(Node* from, Node* goal, const ObstacleDistanceGrid& distances) {
     return h_cost;
 }
 
-double g_cost(Node* from, Node* goal, const ObstacleDistanceGrid& distances, const SearchParams& params) {
+double g_cost(Node* start, Node* current, const ObstacleDistanceGrid& distances, const SearchParams& params) {
+    int dx = std::abs(start->cell.x - current->cell.x);
+    int dy = std::abs(start->cell.y - current->cell.y);
+    double diag_distance = 1.414;
 
+    double g_cost = (dx+dy) + (diag_distance - 2) * std::min(dx,dy);
+    return g_cost;
 }
 
 std::vector<Node*> expand_node(Node* node, const ObstacleDistanceGrid* distances, const SearchParams& params) {
@@ -110,6 +115,15 @@ std::vector<Node*> expand_node(Node* node, const ObstacleDistanceGrid* distances
         children.push_back(childNode);
     }
     return children;
+}
+
+std::vector<pose_xyt_t> make_path(Node* goal_node, Node* start_node, const ObstacleDistanceGrid& distances) {
+    // Full stack extract path
+    std::vector<Node*> npath = extract_node_path(goal_node, start_node);
+    npath = prune_node_path(npath);
+    std::vector<pose_xyt_t> ppath = extract_pose_path(npath, distances);
+
+    return ppath;
 }
 
 std::vector<Node*> extract_node_path(Node* goal_node, Node* start_node) {
