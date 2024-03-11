@@ -106,7 +106,7 @@ struct SearchParams
 };
 
 double h_cost(Node* from, Node* goal, const ObstacleDistanceGrid& distances);
-double g_cost(Node* from, Node* goal, const ObstacleDistanceGrid& distances, const SearchParams& params);
+double g_cost(Node* start, Node* current, const ObstacleDistanceGrid& distances, const SearchParams& params);
 std::vector<Node*> expand_node(Node* node, const ObstacleDistanceGrid* distances, const SearchParams& params);
 std::vector<Node*> extract_node_path(Node* goal_node, Node* start_node);
 std::vector<Node*> prune_node_path(std::vector<Node*> nodePath);

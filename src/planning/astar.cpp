@@ -28,8 +28,13 @@ double h_cost(Node* from, Node* goal, const ObstacleDistanceGrid& distances) {
     return h_cost;
 }
 
-double g_cost(Node* from, Node* goal, const ObstacleDistanceGrid& distances, const SearchParams& params) {
+double g_cost(Node* start, Node* current, const ObstacleDistanceGrid& distances, const SearchParams& params) {
+    int dx = std::abs(start->cell.x - current->cell.x);
+    int dy = std::abs(start->cell.y - current->cell.y);
+    double diag_distance = 1.414;
 
+    double g_cost = (dx+dy) + (diag_distance - 2) * std::min(dx,dy);
+    return g_cost;
 }
 
 std::vector<Node*> expand_node(Node* node, const ObstacleDistanceGrid* distances, const SearchParams& params) {
