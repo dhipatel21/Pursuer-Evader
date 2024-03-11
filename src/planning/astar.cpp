@@ -12,13 +12,23 @@ robot_path_t search_for_path(pose_xyt_t start,
 {
     ////////////////// TODO: Implement your A* search here //////////////////////////
     
-    // robot_path_t path;
-    // path.utime = start.utime;
-    // path.path.push_back(start);    
-    // path.path_length = path.path.size();
-    // return path;
+    robot_path_t path;
+    path.utime = start.utime;
+    path.path.push_back(start);    
+   
+    PriorityQueue open;
 
-    
+    Point<double> start_point(start.x, start.y);
+    cell_t start_cell = global_position_to_grid_cell(start_point, distances);
+    Point<double> goal_point(goal.x, goal.y);
+    cell_t goal_cell = global_position_to_grid_cell(goal_point, distances);
+
+    Node start_node(start_cell.x, start_cell.y);
+    Node goal_node(goal_cell.x, goal_cell.y);
+
+    PriorityQueue closed;
+
+
 }
 
 double h_cost(Node* from, Node* goal, const ObstacleDistanceGrid& distances) {
