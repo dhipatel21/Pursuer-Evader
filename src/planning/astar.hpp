@@ -8,6 +8,8 @@
 #include <common/grid_utils.hpp>
 #include <queue>
 
+#define CUTOFF_US 100000*10
+
 typedef Point<int> cell_t;
 
 struct Node
@@ -107,12 +109,23 @@ struct SearchParams
 
 double h_cost(Node* from, Node* goal, const ObstacleDistanceGrid& distances);
 double g_cost(Node* start, Node* current, const ObstacleDistanceGrid& distances, const SearchParams& params);
-std::vector<Node*> expand_node(Node* node, const ObstacleDistanceGrid* distances, const SearchParams& params);
+std::vector<Node*> expand_node_astar(Node* node, const ObstacleDistanceGrid* distances, const SearchParams& params);
 
-std::vector<pose_xyt_t> make_path(Node* goal_node, Node* start_node, const ObstacleDistanceGrid& distances);
+std::vector<pose_xyt_t> make_path(Node* goal_node, Node* start_node, const ObstacleDistanceGrid& distances, Node* given_goal);
 std::vector<Node*> extract_node_path(Node* goal_node, Node* start_node);
 std::vector<Node*> prune_node_path(std::vector<Node*> nodePath);
 std::vector<pose_xyt_t> extract_pose_path(std::vector<Node*> nodes, const ObstacleDistanceGrid& distances);
+
+inline double angle_diff(double leftAngle, double rightAngle)
+{
+    double diff = leftAngle - rightAngle;
+    if(fabs(diff) > M_PI)
+    {
+        diff -= (diff > 0) ? M_PI*2 : M_PI*-2;
+    }
+
+    return diff;
+}
 
 bool is_in_list(Node* node, std::vector<Node*> list);
 Node* get_from_list(Node* node, std::vector<Node*> list);

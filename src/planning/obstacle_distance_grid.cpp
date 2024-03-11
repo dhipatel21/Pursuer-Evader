@@ -17,7 +17,7 @@ void ObstacleDistanceGrid::initializeDistances(const OccupancyGrid& map)
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             if (map.logOdds(x, y) < 0) {
-                distance(x, y) = -1.0f;
+                distance(x, y) = MAXFLOAT;
             }
             else {
                 distance(x, y) = 0.0;
@@ -75,7 +75,7 @@ void ObstacleDistanceGrid::expand_node(DistanceNode node, std::priority_queue<Di
     for (int n = 0; n < 8; ++n) {
         cell_t adjacentCell(node.cell.x + xDeltas[n], node.cell.y + yDeltas[n]);
         if (isCellInGrid(adjacentCell.x, adjacentCell.y)) {
-            if(cells_[cellIndex(adjacentCell.x, adjacentCell.y)] == -1.0) {
+            if(cells_[cellIndex(adjacentCell.x, adjacentCell.y)] == MAXFLOAT) {
                 DistanceNode adjacentNode(adjacentCell, node.distance+1);
                 cells_[cellIndex(adjacentCell.x, adjacentCell.y)] = adjacentNode.distance * metersPerCell();
                 search_queue.push(adjacentNode);

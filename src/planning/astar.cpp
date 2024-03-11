@@ -13,54 +13,123 @@ robot_path_t search_for_path(pose_xyt_t start,
     ////////////////// TODO: Implement your A* search here //////////////////////////
     
     robot_path_t path;
-    // path.utime = start.utime;
-    // path.path.push_back(start);    
+    path.utime = start.utime;
+    path.path.push_back(start);
+
+    auto start_time = high_resolution_clock::now();
     // path.path_length = path.path.size();
     // return path;
     PriorityQueue open;
+
+    Point<double> start_point(double(start.x), double(start.y));
+    Point<double> goal_point(double(goal.x), double(goal.y));
+
+    Point<int> start_pos = global_position_to_grid_cell(start_point, distances);
+    Point<int> goal_pos = global_position_to_grid_cell(goal_point, distances);
+
+    // std::cout << "start pos in grid x " << start_pos.x << " y " << start_pos.y << std::endl;
+    // std::cout << "goal pos in grid x " << start_pos.x << " y " << start_pos.y << std::endl;
+
+    Node* startNode = new Node(start_pos.x, start_pos.y);
+    startNode->g_cost = g_cost(startNode, startNode, distances, params);
+    startNode->h_cost = h_cost(startNode, startNode, distances);
+
+    Node* goalNode = new Node(goal_pos.x, goal_pos.y);
+    goalNode->g_cost = g_cost(startNode, goalNode, distances, params);
+    goalNode->h_cost = h_cost(goalNode, goalNode, distances);
+
     std::vector<Node*> closed;
 
-    Node* startNode = new Node(start.x, start.y);
-    startNode->g_cost = 0.0;
+    if (startNode->cell.x == goalNode->cell.x && startNode->cell.y == goalNode->cell.y) {
+        path.path = make_path(startNode, startNode, distances, goalNode);
+
+        for (auto node : closed) {
+            delete node;
+        }
+        delete goalNode;
+
+        path.path_length = path.path.size();
+        return path;
+    }
 
     open.push(startNode);
 
+    // std::cout << "begin planning" << std::endl;
     while (!open.empty()) {
+        auto current_time = high_resolution_clock::now();
+        std::chrono::microseconds dt = duration_cast<microseconds>(current_time - start_time);
+
+        if (dt.count() > CUTOFF_US) {
+            std::cout << "TIME EXCEEDED" << std::endl;
+            break;
+        }
+
+        // std::cout << "open size " << open.elements.size() << std::endl;
         Node* currentNode = open.pop();
 
-        if (currentNode->cell.x == goal.x && currentNode->cell.y == goal.y) {
+        if (currentNode->cell.x == goalNode->cell.x && currentNode->cell.y == goalNode->cell.y) {
+            path.path = make_path(currentNode, startNode, distances, goalNode);
 
-            path.path = extract_pose_path(extract_node_path(currentNode, startNode), distances);
+            for (auto node : closed) {
+                delete node;
+            }
+            delete goalNode;
+
+            path.path_length = path.path.size();
             return path;
         }
 
-        closed.push_back(currentNode);
+        std::vector<Node*> kids = expand_node_astar(currentNode, &distances, params);
+        // std::cout << "kids expanded to " << kids.size() << " kids " << std::endl;
 
-        std::vector<Node*> kids = expand_node(currentNode, &distances, params);
-
-        for (Node* kid : kids) {
+        for (auto kid : kids) {
+            // std::cout << "search kid" << std::endl;
             double cost = g_cost(currentNode, kid, distances, params);
 
-            if (is_in_list(kid, closed) && get_from_list(kid, closed)->g_cost <= cost) {
+            if (kid->cell.x == goalNode->cell.x && kid->cell.y == goalNode->cell.y) {
+                path.path = make_path(kid, startNode, distances, goalNode);
+
+                for (auto node : closed) {
+                    delete node;
+                }
+                delete goalNode;
+
+                path.path_length = path.path.size();
+                return path;
+            }
+
+            if (is_in_list(kid, closed)) {
+                // std::cout << "kid in list, skip" << std::endl;
                 continue;
             }
+            else {
+                if (is_in_list(kid, open.elements)) {
+                    // std::cout << "existing kid" << std::endl;
+                    Node* existingNode = get_from_list(kid, open.elements);
+                    if (cost < existingNode->g_cost) {
+                        existingNode->parent = currentNode;
+                        existingNode->g_cost = cost;
+                        existingNode->h_cost = h_cost(existingNode, goalNode, distances);
+                    }
+                } 
+                else {
+                    // std::cout << "new kid" << std::endl;
+                    kid->parent = currentNode;
+                    kid->g_cost = cost;
+                    kid->h_cost = h_cost(kid, goalNode, distances);
 
-            if (is_in_list(kid, open.elements)) {
-                Node* existingNode = get_from_list(kid, open.elements);
-                if (cost < existingNode->g_cost) {
-                    existingNode->parent = currentNode;
-                    existingNode->g_cost = cost;
-                    existingNode->f_cost();
+                    open.push(kid);
                 }
-            } else {
-                kid->parent = currentNode;
-                kid->g_cost = cost;
-                kid->f_cost();
-
-                open.push(kid);
             }
         }
+        closed.push_back(currentNode);
     }
+
+    for (auto node : closed) {
+        delete node;
+    }
+    delete goalNode;
+
     return path;
 }
 
@@ -78,11 +147,29 @@ double g_cost(Node* start, Node* current, const ObstacleDistanceGrid& distances,
     int dy = std::abs(start->cell.y - current->cell.y);
     double diag_distance = 1.414;
 
-    double g_cost = (dx+dy) + (diag_distance - 2) * std::min(dx,dy);
+    // Calculate the cost to move from the start node to the current node
+    double movement_cost = 1.0; // Assuming each step has a cost of 1
+
+    // Adjust the cost based on obstacle distance
+    double distance_cost = 0.0;
+    float obstacle_distance = distances(start->cell.x, start->cell.y);
+    if (obstacle_distance >= params.minDistanceToObstacle && obstacle_distance <= params.maxDistanceWithCost) {
+        distance_cost = pow(params.maxDistanceWithCost - obstacle_distance, params.distanceCostExponent);
+    }
+
+    double g_cost = start->g_cost + distance_cost;
+
+    if (dx > 0 && dy > 0) {
+        movement_cost = diag_distance;
+    }
+
+    g_cost += movement_cost;
+
     return g_cost;
 }
 
-std::vector<Node*> expand_node(Node* node, const ObstacleDistanceGrid* distances, const SearchParams& params) {
+
+std::vector<Node*> expand_node_astar(Node* node, const ObstacleDistanceGrid* distances, const SearchParams& params) {
     const int xDeltas[8] = {1, -1, 0, 0, 1, -1, 1, -1};
     const int yDeltas[8] = {0, 0, 1, -1, 1, -1, -1, 1};
 
@@ -91,24 +178,42 @@ std::vector<Node*> expand_node(Node* node, const ObstacleDistanceGrid* distances
         int cell_x = node->cell.x + xDeltas[n];
         int cell_y = node->cell.y + yDeltas[n];
         Node* childNode = new Node(cell_x, cell_y);
+        childNode->parent = node;
 
-        if(!distances->isCellInGrid(cell_x, cell_y))
+        if(!(distances->isCellInGrid(cell_x, cell_y)))
+        {
+            // std::cout << "child not in grid: " << "cell x is " << cell_x << " cell y is " << cell_y << " height is " << distances->widthInCells() << " width is " << distances->widthInCells() <<  std::endl;
             continue;
-        
-        if((*distances)(cell_x, cell_y) <= params.minDistanceToObstacle)
+        }
+            
+        if((*distances)(cell_x, cell_y) <= float(params.minDistanceToObstacle))
+        {
+            // std::cout << "child in collision" << std::endl;
+            delete childNode;
             continue;
+        }
 
         children.push_back(childNode);
     }
+
+    // std::cout << "created " << children.size() << " kids" << std::endl;
+
     return children;
 }
 
-std::vector<pose_xyt_t> make_path(Node* goal_node, Node* start_node, const ObstacleDistanceGrid& distances) {
+std::vector<pose_xyt_t> make_path(Node* goal_node, Node* start_node, const ObstacleDistanceGrid& distances, Node* given_goal) {
     // Full stack extract path
+    // std::cout << "Found path!" << std::endl;
+    // std::cout << "Our goal state: x " << goal_node->cell.x << " y " << goal_node->cell.y << std::endl;
+    // std::cout << "Original goal state: x " << goal_node->cell.x << " y " << goal_node->cell.y << std::endl;
+
     std::vector<Node*> npath = extract_node_path(goal_node, start_node);
     npath = prune_node_path(npath);
     std::vector<pose_xyt_t> ppath = extract_pose_path(npath, distances);
 
+    // for (int i = 0; i < ppath.size(); i++) {
+    //     std::cout << "Pose " << i << " x " << ppath[i].x << " y " << ppath[i].y << std::endl;
+    // }
     return ppath;
 }
 
@@ -125,17 +230,40 @@ std::vector<Node*> extract_node_path(Node* goal_node, Node* start_node) {
 }
 
 std::vector<Node*> prune_node_path(std::vector<Node*> nodePath) {
-    
+    // TODO: 3 card monte trimming
+
+    if (nodePath.size() >= 3) {
+        Node* current_node = nodePath[0];
+        Node* next_node = current_node->parent;
+        Node* far_node = next_node->parent;
+        Node* last_node = nodePath[nodePath.size()];
+
+        while (!(current_node == last_node)) {
+            // basically; 
+            // 1. check if three points are in a line
+            // 2. if so, kill the next node, set parent of current node to far node, next node becomes far node, far node becomes parent of the old far node
+            // 3. repeat until 3 points are not in a line
+            // 4. set current node to far node
+            // 5. repeat until the current node is the last node, and no more parents
+            break; // temporary
+        }
+    }
+
+    std::reverse(nodePath.begin(), nodePath.end());
+    return nodePath;
 }
 
 std::vector<pose_xyt_t> extract_pose_path(std::vector<Node*> nodes, const ObstacleDistanceGrid& distances) {
     std::vector<pose_xyt_t> path;
     for (auto node : nodes) {
+        Node* parent = node->parent;
+        Point<double> global_path_cell = grid_position_to_global_position(node->cell, distances);
+
         pose_xyt_t pose;
-        pose.x = node->cell.x;
-        pose.y = node->cell.y;
-        // TODO: Add pose.theta
-        // pose.theta = ;
+        pose.x = global_path_cell.x;
+        pose.y = global_path_cell.y;
+        pose.theta = 0.0;
+
         path.push_back(pose);
     }
     return path;
