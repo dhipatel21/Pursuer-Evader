@@ -17,6 +17,8 @@ robot_path_t search_for_path(pose_xyt_t start,
     // path.path.push_back(start);    
     // path.path_length = path.path.size();
     // return path;
+
+    
 }
 
 double h_cost(Node* from, Node* goal, const ObstacleDistanceGrid& distances) {
@@ -58,16 +60,25 @@ std::vector<Node*> expand_node(Node* node, const ObstacleDistanceGrid* distances
     return children;
 }
 
-std::vector<Node*> extract_node_path(Node* goal_node, Node* start_node) {
+std::vector<pose_xyt_t> make_path(Node* goal_node, Node* start_node, const ObstacleDistanceGrid& distances) {
+    // Full stack extract path
+    std::vector<Node*> npath = extract_node_path(goal_node, start_node);
+    npath = prune_node_path(npath);
+    std::vector<pose_xyt_t> ppath = extract_pose_path(npath, distances);
 
+    return ppath;
+}
+
+std::vector<Node*> extract_node_path(Node* goal_node, Node* start_node) {
+    // Returns: Path to goal
 }
 
 std::vector<Node*> prune_node_path(std::vector<Node*> nodePath) {
-
+    // Returns: Smoothed path to goal (via midpoint pruning)
 }
 
 std::vector<pose_xyt_t> extract_pose_path(std::vector<Node*> nodes, const ObstacleDistanceGrid& distances) {
-
+    // Returns: Pose path
 }
 
 bool is_in_list(Node* node, std::vector<Node*> list) {

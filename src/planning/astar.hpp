@@ -108,9 +108,10 @@ struct SearchParams
 double h_cost(Node* from, Node* goal, const ObstacleDistanceGrid& distances);
 double g_cost(Node* start, Node* current, const ObstacleDistanceGrid& distances, const SearchParams& params);
 std::vector<Node*> expand_node(Node* node, const ObstacleDistanceGrid* distances, const SearchParams& params);
+
+std::vector<pose_xyt_t> make_path(Node* goal_node, Node* start_node, const ObstacleDistanceGrid& distances);
 std::vector<Node*> extract_node_path(Node* goal_node, Node* start_node);
 std::vector<Node*> prune_node_path(std::vector<Node*> nodePath);
-
 std::vector<pose_xyt_t> extract_pose_path(std::vector<Node*> nodes, const ObstacleDistanceGrid& distances);
 
 bool is_in_list(Node* node, std::vector<Node*> list);
