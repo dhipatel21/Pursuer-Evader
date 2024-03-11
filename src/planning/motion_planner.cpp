@@ -76,7 +76,12 @@ bool MotionPlanner::isPathSafe(const robot_path_t& path) const
 {
 
     ///////////// TODO: Implement your test for a safe path here //////////////////
-
+    for (const pose_xyt_t& pose : path.path) {
+        auto cell = global_position_to_grid_cell(Point<double>(pose.x, pose.y), distances_);
+        if (!distances_.isCellInGrid(cell.x, cell.y) || distances_(cell.x, cell.y) <= params_.robotRadius) {
+            return false;
+        }
+    }
     return true;
 }
 
