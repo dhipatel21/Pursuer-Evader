@@ -228,26 +228,53 @@ std::vector<Node*> extract_node_path(Node* goal_node, Node* start_node) {
     return path;
 }
 
+bool are_nodes_in_line(Node* a, Node* b, Node* c) {
+    // Check if the slope between a and b is equal to the slope between b and c
+    return (c->cell.y - b->cell.y) / (c->cell.x - b->cell.x) ==
+           (b->cell.y - a->cell.y) / (b->cell.x - a->cell.x);
+}
+
 std::vector<Node*> prune_node_path(std::vector<Node*> nodePath) {
     // TODO: 3 card monte trimming
 
-    if (nodePath.size() >= 3) {
-        Node* current_node = nodePath[0];
-        Node* next_node = current_node->parent;
-        Node* far_node = next_node->parent;
-        Node* last_node = nodePath[nodePath.size()];
+    // if (nodePath.size() >= 3) {
+    //     Node* current_node = nodePath[0];
+    //     Node* next_node = current_node->parent;
+    //     Node* far_node = next_node->parent;
+    //     Node* last_node = nodePath[nodePath.size()];
 
-        while (!(current_node == last_node)) {
-            // basically; 
-            // 1. check if three points are in a line
-            // 2. if so, kill the next node, set parent of current node to far node, next node becomes far node, far node becomes parent of the old far node
-            // 3. repeat until 3 points are not in a line
-            // 4. set current node to far node
-            // 5. repeat until the current node is the last node, and no more parents
+    //     while (!(current_node == last_node)) {
+    //         // basically; 
+    //         // 1. check if three points are in a line
+    //         // 2. if so, kill the next node, set parent of current node to far node, next node becomes far node, far node becomes parent of the old far node
+    //         // 3. repeat until 3 points are not in a line
+    //         // 4. set current node to far node
+    //         // 5. repeat until the current node is the last node, and no more parents
+    //     }
+    // }
+
+    // std::reverse(nodePath.begin(), nodePath.end());
+    // return nodePath;
+
+    if (nodePath.size() >= 3) {
+    std::vector<Node*> pruned_path;
+    pruned_path.push_back(nodePath[0]);
+
+    for (size_t i = 1; i < nodePath.size() - 1; ++i) {
+        Node* current = nodePath[i];
+        Node* previous = nodePath[i - 1];
+        Node* next = nodePath[i + 1];
+
+        // Check if the three nodes are in a line
+        if (!are_nodes_in_line(previous, current, next)) {
+            pruned_path.push_back(current);
         }
     }
 
-    std::reverse(nodePath.begin(), nodePath.end());
+    pruned_path.push_back(nodePath.back());
+    return pruned_path;
+    }
+
     return nodePath;
 }
 
