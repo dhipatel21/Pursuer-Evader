@@ -6,7 +6,7 @@
 #include <queue>
 #include <set>
 #include <cassert>
-
+#include <cmath>
 
 bool is_frontier_cell(int x, int y, const OccupancyGrid& map);
 frontier_t grow_frontier(Point<int> cell, const OccupancyGrid& map, std::set<Point<int>>& visitedFrontiers);
@@ -99,16 +99,60 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
     *   - The cells along the frontier might not be in the configuration space of the robot, so you won't necessarily
     *       be able to drive straight to a frontier cell, but will need to drive somewhere close.
     */
-    robot_path_t emptyPath;
+    robot_path_t plannedPath;
     
-    frontier_t current_frontier = frontiers.front();
+    // find and sort centroids by distance
+    std::vector<Point<float>> centroids;
 
-    // find centroid of frontier
-    Point<float> centroid = find_frontier_centroid(current_frontier);
+    for (auto &&frontier : frontiers) {
+        Point<float> centroid = find_frontier_centroid(frontier);
 
-    // 
+        centroids.push_back(centroid);
+    }
 
-    return emptyPath;
+    std::sort(centroids.begin(), centroids.end(), sort_by_distance);
+
+    // check for path to each centroid
+    for (auto &&centroid : centroids){
+        cell_t centroidCell = global_position_to_grid_cell(centroid, map);
+        pose_xyt_t newPose (robotPose);
+
+        newPose.x = centroidCell.x;
+        newPose.y = centroidCell.y;
+
+        // if cell is suitable goal pose, we're good
+        if(map.isCellInGrid(centroid.x, centroid.y) // cell is in the grid
+        && map.logOdds(centroid.x, centroid.y) < 0  // cell is unoccupied by an obstacle
+        && planner.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
+        {
+            plannedPath = planner.planPath(robotPose, newPose);
+
+            if (planner.isPathSafe(plannedPath)){   // is path still safe
+                return plannedPath;
+            }
+        }
+
+        // otherwise centroid is not suitable, so radial search to find suitable cells on frontier
+        int radius = 1;
+        for (float angle = 0; angle < 360; angle += 22.5){
+            float dx = radius * cos(angle);
+            float dy = radius * sin(angle);
+            
+            Point<double> coordinate (centroid.x + dx, centroid.y + dy);
+            cell_t cell = global_position_to_grid_cell(coordinate, map);
+
+            
+        }
+    }
+
+}
+
+bool sort_by_distance(Point<float>& centroid1, Point<float>& centroid2, const pose_xyt_t& robotPose){
+    return distance_from_robot(centroid1, robotPose) < distance_from_robot(centroid2, robotPose);
+}
+
+double distance_from_robot(Point<float> point, const pose_xyt_t& robotPose) {
+    return std::sqrt(std::pow((point.x - robotPose.x), 2) + std::pow((point.y - robotPose.y), 2));
 }
 
 Point<float> find_frontier_centroid(frontier_t frontier)
