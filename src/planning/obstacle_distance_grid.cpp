@@ -40,7 +40,6 @@ void ObstacleDistanceGrid::setDistances(const OccupancyGrid& map)
 {
     resetGrid(map);
     
-    ///////////// TODO: Implement an algorithm to mark the distance to the nearest obstacle for every cell in the map.
     initializeDistances(map);
 
     std::priority_queue<DistanceNode> searchQueue;
@@ -50,6 +49,18 @@ void ObstacleDistanceGrid::setDistances(const OccupancyGrid& map)
         auto nextNode = searchQueue.top();
         searchQueue.pop();
         expand_node(nextNode, searchQueue);
+    }
+
+    int max = -100;
+    for (int i = 0; i < cells_.size(); i++) {
+        if (cells_[i] > max) {
+            max = cells_[i];
+        }
+    }
+    if (max == -1) {
+        for (int i = 0; i < cells_.size(); i++) {
+            cells_[i] = 100;
+        }
     }
 }
 

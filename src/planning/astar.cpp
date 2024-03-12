@@ -17,6 +17,10 @@ robot_path_t search_for_path(pose_xyt_t start,
     path.path.push_back(start);
 
     auto start_time = high_resolution_clock::now();
+    path.utime = start.utime;
+    path.path.push_back(start);
+
+    auto start_time = high_resolution_clock::now();
     // path.path_length = path.path.size();
     // return path;
     PriorityQueue open;
@@ -40,6 +44,17 @@ robot_path_t search_for_path(pose_xyt_t start,
 
     std::vector<Node*> closed;
 
+    if (startNode->cell.x == goalNode->cell.x && startNode->cell.y == goalNode->cell.y) {
+        path.path = make_path(startNode, startNode, distances, goalNode);
+
+        for (auto node : closed) {
+            delete node;
+        }
+        delete goalNode;
+
+        path.path_length = path.path.size();
+        return path;
+    }
     if (startNode->cell.x == goalNode->cell.x && startNode->cell.y == goalNode->cell.y) {
         path.path = make_path(startNode, startNode, distances, goalNode);
 
@@ -76,16 +91,43 @@ robot_path_t search_for_path(pose_xyt_t start,
             delete goalNode;
 
             path.path_length = path.path.size();
+        if (currentNode->cell.x == goalNode->cell.x && currentNode->cell.y == goalNode->cell.y) {
+            path.path = make_path(currentNode, startNode, distances, goalNode);
+
+            for (auto node : closed) {
+                delete node;
+            }
+            delete goalNode;
+
+            path.path_length = path.path.size();
             return path;
         }
 
         std::vector<Node*> kids = expand_node_astar(currentNode, &distances, params);
         // std::cout << "kids expanded to " << kids.size() << " kids " << std::endl;
+        std::vector<Node*> kids = expand_node_astar(currentNode, &distances, params);
+        // std::cout << "kids expanded to " << kids.size() << " kids " << std::endl;
 
+        for (auto kid : kids) {
+            // std::cout << "search kid" << std::endl;
         for (auto kid : kids) {
             // std::cout << "search kid" << std::endl;
             double cost = g_cost(currentNode, kid, distances, params);
 
+            if (kid->cell.x == goalNode->cell.x && kid->cell.y == goalNode->cell.y) {
+                path.path = make_path(kid, startNode, distances, goalNode);
+
+                for (auto node : closed) {
+                    delete node;
+                }
+                delete goalNode;
+
+                path.path_length = path.path.size();
+                return path;
+            }
+
+            if (is_in_list(kid, closed)) {
+                // std::cout << "kid in list, skip" << std::endl;
             if (kid->cell.x == goalNode->cell.x && kid->cell.y == goalNode->cell.y) {
                 path.path = make_path(kid, startNode, distances, goalNode);
 
@@ -117,6 +159,33 @@ robot_path_t search_for_path(pose_xyt_t start,
                     kid->parent = currentNode;
                     kid->g_cost = cost;
                     kid->h_cost = h_cost(kid, goalNode, distances);
+            else {
+                if (is_in_list(kid, open.elements)) {
+                    // std::cout << "existing kid" << std::endl;
+                    Node* existingNode = get_from_list(kid, open.elements);
+                    if (cost < existingNode->g_cost) {
+                        existingNode->parent = currentNode;
+                        existingNode->g_cost = cost;
+                        existingNode->h_cost = h_cost(existingNode, goalNode, distances);
+                    }
+                } 
+                else {
+                    // std::cout << "new kid" << std::endl;
+                    kid->parent = currentNode;
+                    kid->g_cost = cost;
+                    kid->h_cost = h_cost(kid, goalNode, distances);
+
+                    open.push(kid);
+                }
+            }
+        }
+        closed.push_back(currentNode);
+    }
+
+    for (auto node : closed) {
+        delete node;
+    }
+    delete goalNode;
 
                     open.push(kid);
                 }
@@ -179,7 +248,11 @@ std::vector<Node*> expand_node_astar(Node* node, const ObstacleDistanceGrid* dis
         int cell_y = node->cell.y + yDeltas[n];
         Node* childNode = new Node(cell_x, cell_y);
         childNode->parent = node;
+        childNode->parent = node;
 
+        if(!(distances->isCellInGrid(cell_x, cell_y)))
+        {
+            // std::cout << "child not in grid: " << "cell x is " << cell_x << " cell y is " << cell_y << " height is " << distances->widthInCells() << " width is " << distances->widthInCells() <<  std::endl;
         if(!(distances->isCellInGrid(cell_x, cell_y)))
         {
             // std::cout << "child not in grid: " << "cell x is " << cell_x << " cell y is " << cell_y << " height is " << distances->widthInCells() << " width is " << distances->widthInCells() <<  std::endl;
@@ -190,7 +263,14 @@ std::vector<Node*> expand_node_astar(Node* node, const ObstacleDistanceGrid* dis
         {
             // std::cout << "child in collision" << std::endl;
             delete childNode;
+        }
+            
+        if((*distances)(cell_x, cell_y) <= float(params.minDistanceToObstacle))
+        {
+            // std::cout << "child in collision" << std::endl;
+            delete childNode;
             continue;
+        }
         }
 
         children.push_back(childNode);
@@ -198,9 +278,13 @@ std::vector<Node*> expand_node_astar(Node* node, const ObstacleDistanceGrid* dis
 
     // std::cout << "created " << children.size() << " kids" << std::endl;
 
+
+    // std::cout << "created " << children.size() << " kids" << std::endl;
+
     return children;
 }
 
+std::vector<pose_xyt_t> make_path(Node* goal_node, Node* start_node, const ObstacleDistanceGrid& distances, Node* given_goal) {
 std::vector<pose_xyt_t> make_path(Node* goal_node, Node* start_node, const ObstacleDistanceGrid& distances, Node* given_goal) {
     // Full stack extract path
     // std::cout << "Found path!" << std::endl;
@@ -251,6 +335,27 @@ std::vector<Node*> prune_node_path(std::vector<Node*> nodePath) {
 
     std::reverse(nodePath.begin(), nodePath.end());
     return nodePath;
+    // TODO: 3 card monte trimming
+
+    if (nodePath.size() >= 3) {
+        Node* current_node = nodePath[0];
+        Node* next_node = current_node->parent;
+        Node* far_node = next_node->parent;
+        Node* last_node = nodePath[nodePath.size()];
+
+        while (!(current_node == last_node)) {
+            // basically; 
+            // 1. check if three points are in a line
+            // 2. if so, kill the next node, set parent of current node to far node, next node becomes far node, far node becomes parent of the old far node
+            // 3. repeat until 3 points are not in a line
+            // 4. set current node to far node
+            // 5. repeat until the current node is the last node, and no more parents
+            break; // temporary
+        }
+    }
+
+    std::reverse(nodePath.begin(), nodePath.end());
+    return nodePath;
 }
 
 std::vector<pose_xyt_t> extract_pose_path(std::vector<Node*> nodes, const ObstacleDistanceGrid& distances) {
@@ -259,7 +364,14 @@ std::vector<pose_xyt_t> extract_pose_path(std::vector<Node*> nodes, const Obstac
         Node* parent = node->parent;
         Point<double> global_path_cell = grid_position_to_global_position(node->cell, distances);
 
+        Node* parent = node->parent;
+        Point<double> global_path_cell = grid_position_to_global_position(node->cell, distances);
+
         pose_xyt_t pose;
+        pose.x = global_path_cell.x;
+        pose.y = global_path_cell.y;
+        pose.theta = 0.0;
+
         pose.x = global_path_cell.x;
         pose.y = global_path_cell.y;
         pose.theta = 0.0;

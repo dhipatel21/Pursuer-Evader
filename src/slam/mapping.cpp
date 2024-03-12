@@ -3,7 +3,7 @@
 #include <slam/occupancy_grid.hpp>
 #include <common/grid_utils.hpp>
 #include <numeric>
-
+#include <limits>
 
 Mapping::Mapping(float maxLaserDistance, int8_t hitOdds, int8_t missOdds)
 : kMaxLaserDistance_(maxLaserDistance), kHitOdds_(hitOdds), kMissOdds_(missOdds), initialized_(false)
