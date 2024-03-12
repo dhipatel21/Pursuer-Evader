@@ -121,8 +121,8 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
         newPose.y = centroidCell.y;
 
         // if cell is suitable goal pose, we're good
-        if(map.isCellInGrid(centroid.x, centroid.y) // cell is in the grid
-        && map.logOdds(centroid.x, centroid.y) < 0  // cell is unoccupied by an obstacle
+        if(map.isCellInGrid(centroidCell.x, centroidCell.y) // cell is in the grid
+        && map.logOdds(centroidCell.x, centroidCell.y) < 0  // cell is unoccupied by an obstacle
         && planner.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
         {
             plannedPath = planner.planPath(robotPose, newPose);
@@ -134,14 +134,28 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
 
         // otherwise centroid is not suitable, so radial search to find suitable cells on frontier
         int radius = 1;
-        for (float angle = 0; angle < 360; angle += 22.5){
-            float dx = radius * cos(angle);
-            float dy = radius * sin(angle);
-            
-            Point<double> coordinate (centroid.x + dx, centroid.y + dy);
-            cell_t cell = global_position_to_grid_cell(coordinate, map);
+        while (radius < 10){
+            for (float angle = 0; angle < 360; angle += 22.5){
+                float dx = radius * cos(angle);
+                float dy = radius * sin(angle);
+                
+                Point<double> coordinate (centroid.x + dx, centroid.y + dy);
+                cell_t cell = global_position_to_grid_cell(coordinate, map);
 
-            
+                if(is_frontier_cell(cell.x, cell.y, map)    // cell is on the frontier
+                && map.isCellInGrid(cell.x, cell.y)         // cell is in the grid
+                && map.logOdds(cell.x, cell.y) < 0          // cell is unoccupied by an obstacle
+                && planner.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
+                    {
+                        plannedPath = planner.planPath(robotPose, newPose);
+
+                        if (planner.isPathSafe(plannedPath)){   // is path still safe
+                            return plannedPath;
+                        }
+                    }
+                
+                ++radius;
+            }
         }
     }
 
