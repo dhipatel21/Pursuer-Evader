@@ -101,9 +101,35 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
     */
     robot_path_t emptyPath;
     
+    frontier_t current_frontier = frontiers.front();
+
+    // find centroid of frontier
+    Point<float> centroid = find_frontier_centroid(current_frontier);
+
+    // 
+
     return emptyPath;
 }
 
+Point<float> find_frontier_centroid(frontier_t frontier)
+{
+    float sumX = 0;
+    float sumY = 0;
+
+    for (auto &&coord : frontier.cells){
+        sumX += coord.x;
+        sumY += coord.y;
+    }
+
+    float centroidX = sumX / frontier.cells.size();
+    float centroidY = sumY / frontier.cells.size();
+
+    Point<float> centroid (centroidX, centroidY);
+
+    auto const it = std::lower_bound(frontier.cells.begin(), frontier.cells.end(), centroid);
+
+    return *it;
+}
 
 bool is_frontier_cell(int x, int y, const OccupancyGrid& map)
 {
