@@ -227,6 +227,7 @@ std::vector<Node*> prune_node_path(std::vector<Node*> nodePath) {
             // 3. repeat until 3 points are not in a line
             // 4. set current node to far node
             // 5. repeat until the current node is the last node, and no more parents
+            break; // temporary
         }
     }
 
