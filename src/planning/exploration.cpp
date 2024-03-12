@@ -244,7 +244,16 @@ int8_t Exploration::executeExploringMap(bool initialize)
     *       -- You will likely be able to see the frontier before actually reaching the end of the path leading to it.
     */
     
-
+    if (initialize) {
+        frontiers_ = find_map_frontiers(currentMap_, currentPose_);
+    }
+    
+    if (!frontiers_.empty()) {
+        currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_);
+    }
+    else {
+        return exploration_status_t::STATE_RETURNING_HOME;
+    }
 
     /////////////////////////////// End student code ///////////////////////////////
 
