@@ -229,15 +229,15 @@ std::vector<Node*> extract_node_path(Node* goal_node, Node* start_node) {
 
 bool are_nodes_in_line(Node* a, Node* b, Node* c) {
     // Check if the slope between a and b is equal to the slope between b and c
-    if ((c->cell.x == b->cell.x == a->cell.x) || (c->cell.y == b->cell.y == a->cell.y)) {
+    if (((c->cell.x == b->cell.x) && (a->cell.x == b->cell.x)) || ((c->cell.y == b->cell.y) && (a->cell.y == b->cell.y))) {
         return true;
     }
     else if ((c->cell.x == b->cell.x) || (b->cell.x == a->cell.x)) {
         return false;
     }
     
-    return (c->cell.y - b->cell.y) / (c->cell.x - b->cell.x) ==
-           (b->cell.y - a->cell.y) / (b->cell.x - a->cell.x);
+    return float(float(c->cell.y - b->cell.y) / float(c->cell.x - b->cell.x)) ==
+           float(float(b->cell.y - a->cell.y) / float(b->cell.x - a->cell.x));
 }
 
 std::vector<Node*> prune_node_path(std::vector<Node*> nodePath) {
