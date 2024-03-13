@@ -85,6 +85,33 @@ std::vector<frontier_t> find_map_frontiers(const OccupancyGrid& map,
     return frontiers;
 }
 
+double distance_from_robot(Point<float> point, const pose_xyt_t& robotPose) {
+    return std::sqrt(std::pow((point.x - robotPose.x), 2) + std::pow((point.y - robotPose.y), 2));
+}
+
+bool sort_by_distance(Point<float>& centroid1, Point<float>& centroid2, const pose_xyt_t& robotPose){
+    return distance_from_robot(centroid1, robotPose) < distance_from_robot(centroid2, robotPose);
+}
+
+Point<float> find_frontier_centroid(frontier_t frontier)
+{
+    float sumX = 0;
+    float sumY = 0;
+
+    for (auto &&coord : frontier.cells){
+        sumX += coord.x;
+        sumY += coord.y;
+    }
+
+    float centroidX = sumX / frontier.cells.size();
+    float centroidY = sumY / frontier.cells.size();
+
+    Point<float> centroid (centroidX, centroidY);
+
+    auto const it = std::lower_bound(frontier.cells.begin(), frontier.cells.end(), centroid);
+
+    return *it;
+}
 
 robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers, 
                                    const pose_xyt_t& robotPose,
@@ -159,34 +186,6 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
         }
     }
 
-}
-
-bool sort_by_distance(Point<float>& centroid1, Point<float>& centroid2, const pose_xyt_t& robotPose){
-    return distance_from_robot(centroid1, robotPose) < distance_from_robot(centroid2, robotPose);
-}
-
-double distance_from_robot(Point<float> point, const pose_xyt_t& robotPose) {
-    return std::sqrt(std::pow((point.x - robotPose.x), 2) + std::pow((point.y - robotPose.y), 2));
-}
-
-Point<float> find_frontier_centroid(frontier_t frontier)
-{
-    float sumX = 0;
-    float sumY = 0;
-
-    for (auto &&coord : frontier.cells){
-        sumX += coord.x;
-        sumY += coord.y;
-    }
-
-    float centroidX = sumX / frontier.cells.size();
-    float centroidY = sumY / frontier.cells.size();
-
-    Point<float> centroid (centroidX, centroidY);
-
-    auto const it = std::lower_bound(frontier.cells.begin(), frontier.cells.end(), centroid);
-
-    return *it;
 }
 
 bool is_frontier_cell(int x, int y, const OccupancyGrid& map)
