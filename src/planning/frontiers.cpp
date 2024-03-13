@@ -1,26 +1,4 @@
 #include <planning/frontiers.hpp>
-#include <planning/motion_planner.hpp>
-#include <common/grid_utils.hpp>
-#include <slam/occupancy_grid.hpp>
-#include <lcmtypes/robot_path_t.hpp>
-#include <queue>
-#include <set>
-#include <cassert>
-#include <cmath>
-
-bool is_frontier_cell(int x, int y, const OccupancyGrid& map);
-frontier_t grow_frontier(Point<int> cell, const OccupancyGrid& map, std::set<Point<int>>& visitedFrontiers);
-robot_path_t path_to_frontier(const frontier_t& frontier, 
-                              const pose_xyt_t& pose, 
-                              const OccupancyGrid& map,
-                              const MotionPlanner& planner);
-pose_xyt_t nearest_navigable_cell(pose_xyt_t pose, 
-                                  Point<float> desiredPosition, 
-                                  const OccupancyGrid& map,
-                                  const MotionPlanner& planner);
-pose_xyt_t search_to_nearest_free_space(Point<float> position, const OccupancyGrid& map, const MotionPlanner& planner);
-double path_length(const robot_path_t& path);
-
 
 std::vector<frontier_t> find_map_frontiers(const OccupancyGrid& map, 
                                            const pose_xyt_t& robotPose,
@@ -129,10 +107,12 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
     robot_path_t plannedPath;
     
     // find and sort centroids by distance
-    std::vector<Point<float>> centroids;
+    std::vector<centroid_t> centroids;
 
     for (auto &&frontier : frontiers) {
-        Point<float> centroid = find_frontier_centroid(frontier);
+        centroid_t centroid;
+        centroid.centroid = find_frontier_centroid(frontier);
+        centroid.pose_distance = distance_from_robot(centroid.centroid, robotPose);
 
         centroids.push_back(centroid);
     }
@@ -141,7 +121,7 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
 
     // check for path to each centroid
     for (auto &&centroid : centroids){
-        cell_t centroidCell = global_position_to_grid_cell(centroid, map);
+        cell_t centroidCell = global_position_to_grid_cell(centroid.centroid, map);
         pose_xyt_t newPose (robotPose);
 
         newPose.x = centroidCell.x;
@@ -166,7 +146,7 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
                 float dx = radius * cos(angle);
                 float dy = radius * sin(angle);
                 
-                Point<double> coordinate (centroid.x + dx, centroid.y + dy);
+                Point<double> coordinate (centroid.centroid.x + dx, centroid.centroid.y + dy);
                 cell_t cell = global_position_to_grid_cell(coordinate, map);
 
                 if(is_frontier_cell(cell.x, cell.y, map)    // cell is on the frontier
@@ -186,6 +166,35 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
         }
     }
 
+    return plannedPath;
+}
+
+bool sort_by_distance(centroid_t& centroid1, centroid_t& centroid2) {
+    return centroid1.pose_distance < centroid2.pose_distance;
+}
+
+float distance_from_robot(Point<float> point, const pose_xyt_t& robotPose) {
+    return std::sqrt(std::pow((point.x - robotPose.x), 2) + std::pow((point.y - robotPose.y), 2));
+}
+
+Point<float> find_frontier_centroid(frontier_t frontier)
+{
+    float sumX = 0;
+    float sumY = 0;
+
+    for (auto &&coord : frontier.cells){
+        sumX += coord.x;
+        sumY += coord.y;
+    }
+
+    float centroidX = sumX / frontier.cells.size();
+    float centroidY = sumY / frontier.cells.size();
+
+    Point<float> centroid (centroidX, centroidY);
+
+    auto const it = std::lower_bound(frontier.cells.begin(), frontier.cells.end(), centroid);
+
+    return *it;
 }
 
 bool is_frontier_cell(int x, int y, const OccupancyGrid& map)

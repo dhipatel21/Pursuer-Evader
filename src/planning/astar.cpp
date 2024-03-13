@@ -64,7 +64,7 @@ robot_path_t search_for_path(pose_xyt_t start,
             break;
         }
 
-        std::cout << "open size " << open.elements.size() << std::endl;
+        // std::cout << "open size " << open.elements.size() << std::endl;
         Node* currentNode = open.pop();
 
         if (currentNode->cell.x == goalNode->cell.x && currentNode->cell.y == goalNode->cell.y) {
@@ -204,7 +204,6 @@ std::vector<pose_xyt_t> make_path(Node* goal_node, Node* start_node, const Obsta
     // Full stack extract path
     std::cout << "Found path!" << std::endl;
     std::cout << "Our goal state: x " << goal_node->cell.x << " y " << goal_node->cell.y << std::endl;
-    std::cout << "Original goal state: x " << goal_node->cell.x << " y " << goal_node->cell.y << std::endl;
 
     std::vector<Node*> npath = extract_node_path(goal_node, start_node);
     npath = prune_node_path(npath);
@@ -228,23 +227,40 @@ std::vector<Node*> extract_node_path(Node* goal_node, Node* start_node) {
     return path;
 }
 
+bool are_nodes_in_line(Node* a, Node* b, Node* c) {
+    // Check if the slope between a and b is equal to the slope between b and c
+    if (((c->cell.x == b->cell.x) && (a->cell.x == b->cell.x)) || ((c->cell.y == b->cell.y) && (a->cell.y == b->cell.y))) {
+        return true;
+    }
+    else if ((c->cell.x == b->cell.x) || (b->cell.x == a->cell.x)) {
+        return false;
+    }
+    
+    return float(float(c->cell.y - b->cell.y) / float(c->cell.x - b->cell.x)) ==
+           float(float(b->cell.y - a->cell.y) / float(b->cell.x - a->cell.x));
+}
+
 std::vector<Node*> prune_node_path(std::vector<Node*> nodePath) {
     // TODO: 3 card monte trimming
 
     if (nodePath.size() >= 3) {
-        Node* current_node = nodePath[0];
-        Node* next_node = current_node->parent;
-        Node* far_node = next_node->parent;
-        Node* last_node = nodePath[nodePath.size()];
+        std::vector<Node*> pruned_path;
+        pruned_path.push_back(nodePath[0]);
 
-        while (!(current_node == last_node)) {
-            // basically; 
-            // 1. check if three points are in a line
-            // 2. if so, kill the next node, set parent of current node to far node, next node becomes far node, far node becomes parent of the old far node
-            // 3. repeat until 3 points are not in a line
-            // 4. set current node to far node
-            // 5. repeat until the current node is the last node, and no more parents
+        for (size_t i = 1; i < nodePath.size() - 1; ++i) {
+            Node* current = nodePath[i];
+            Node* previous = nodePath[i - 1];
+            Node* next = nodePath[i + 1];
+
+            // Check if the three nodes are in a line
+            if (!are_nodes_in_line(previous, current, next)) {
+                pruned_path.push_back(current);
+            }
         }
+
+        pruned_path.push_back(nodePath.back());
+        std::reverse(pruned_path.begin(), pruned_path.end());
+        return pruned_path;
     }
 
     std::reverse(nodePath.begin(), nodePath.end());
@@ -258,8 +274,8 @@ std::vector<pose_xyt_t> extract_pose_path(std::vector<Node*> nodes, const Obstac
         Point<double> global_path_cell = grid_position_to_global_position(node->cell, distances);
 
         pose_xyt_t pose;
-        pose.x = global_path_cell.x;
-        pose.y = global_path_cell.y;
+        pose.x = float(global_path_cell.x);
+        pose.y = float(global_path_cell.y);
         pose.theta = 0.0;
 
         path.push_back(pose);

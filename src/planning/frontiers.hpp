@@ -5,6 +5,14 @@
 #include <lcmtypes/pose_xyt_t.hpp>
 #include <lcmtypes/robot_path_t.hpp>
 #include <vector>
+#include <planning/motion_planner.hpp>
+#include <common/grid_utils.hpp>
+#include <slam/occupancy_grid.hpp>
+#include <lcmtypes/robot_path_t.hpp>
+#include <queue>
+#include <set>
+#include <cassert>
+#include <cmath>
 
 class MotionPlanner;
 class OccupancyGrid;
@@ -18,6 +26,11 @@ struct frontier_t
     std::vector<Point<float>> cells;  // The global coordinate of cells that make up the frontier
 };
 
+struct centroid_t
+{
+    Point<float> centroid;
+    float pose_distance;
+};
 
 /**
 * find_map_frontiers locates all frontiers in the provided map. A frontier cell is an unknown cell (log-odds == 0) that
@@ -54,5 +67,29 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
                                    const pose_xyt_t& robotPose,
                                    const OccupancyGrid& map,
                                    const MotionPlanner& planner);
+
+bool is_frontier_cell(int x, int y, const OccupancyGrid& map);
+
+Point<float> find_frontier_centroid(frontier_t frontier);
+
+bool sort_by_distance(centroid_t& centroid1, centroid_t& centroid2);
+
+float distance_from_robot(Point<float> point, const pose_xyt_t& robotPose);
+
+frontier_t grow_frontier(Point<int> cell, const OccupancyGrid& map, std::set<Point<int>>& visitedFrontiers);
+
+robot_path_t path_to_frontier(const frontier_t& frontier, 
+                              const pose_xyt_t& pose, 
+                              const OccupancyGrid& map,
+                              const MotionPlanner& planner);
+
+pose_xyt_t nearest_navigable_cell(pose_xyt_t pose, 
+                                  Point<float> desiredPosition, 
+                                  const OccupancyGrid& map,
+                                  const MotionPlanner& planner);
+
+pose_xyt_t search_to_nearest_free_space(Point<float> position, const OccupancyGrid& map, const MotionPlanner& planner);
+
+double path_length(const robot_path_t& path);
 
 #endif // PLANNING_FRONTIERS_HPP
