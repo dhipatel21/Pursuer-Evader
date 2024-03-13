@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <cassert>
 
-const float kReachedPositionThreshold = 0.05f;  // must get within this distance of a position for it to be explored
+const float kReachedPositionThreshold = 0.025f;  // must get within this distance of a position for it to be explored
 
 // Define an equality operator for poses to allow direct comparison of two paths
 bool operator==(const pose_xyt_t& lhs, const pose_xyt_t& rhs)
@@ -47,8 +47,16 @@ Exploration::Exploration(int32_t teamNumber,
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
     
     MotionPlannerParams params;
-    params.robotRadius = 0.2;
+    SearchParams search_params;
+
+    search_params.minDistanceToObstacle = 0.005;
+    search_params.maxDistanceWithCost = 100;
+    search_params.distanceCostExponent = 0.1;
+
+    params.robotRadius = 0.005;
+
     planner_.setParams(params);
+    planner_.setSearchParams(search_params);
 }
 
 
@@ -245,11 +253,41 @@ int8_t Exploration::executeExploringMap(bool initialize)
     */
     
     if (initialize) {
-        frontiers_ = find_map_frontiers(currentMap_, currentPose_);
+        currentPath_.path_length = 0;
+    }
+
+    frontiers_ = find_map_frontiers(currentMap_, currentPose_);
+    planner_.setMap(currentMap_);
+
+    float goalDist = 0;
+    if (currentPath_.path_length > 1) {
+        goalDist = distance_between_points(Point<float>(currentPose_.x, currentPose_.y), Point<float>(currentPath_.path.back().x, currentPath_.path.back().y));
+    }
+    else {
+        goalDist = std::numeric_limits<float>::max();
     }
     
-    if (!frontiers_.empty()) {
-        currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_);
+    if (!frontiers_.empty() && (initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1)) {
+        // currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_);
+
+        currentPath_.path_length = 1;
+        int cell_idx = 0;
+        int frontier_idx = 0;
+        do {
+            frontier_t frontier = frontiers_[frontier_idx];
+            if (cell_idx >= frontier.cells.size()) {
+                frontier_idx++;
+                if (frontier_idx >= frontiers_.size()) {
+                    std::cout << "No path to frontier" << std::endl;
+                    return exploration_status_t::STATE_EXPLORING_MAP;
+                }
+            }
+
+            Point<double> goal = frontier.cells[cell_idx++];
+            pose_xyt_t goal_pose {utime_now(), static_cast<float>(goal.x), static_cast<float>(goal.y), 0};
+            currentPath_ = planner_.planPath(currentPose_, goal_pose);
+        }
+        while (currentPath_.path_length <= 1);
     }
     else {
         return exploration_status_t::STATE_RETURNING_HOME;
@@ -325,6 +363,13 @@ int8_t Exploration::executeReturningHome(bool initialize)
     
     double distToHome = distance_between_points(Point<float>(homePose_.x, homePose_.y), 
                                                 Point<float>(currentPose_.x, currentPose_.y));
+    
+    if (distToHome <= kReachedPositionThreshold) {
+        if (currentPath_.path.size() <= 1 || !planner_.isPathSafe(currentPath_)) {
+            currentPath_ = planner_.planPath(currentPose_, homePose_);
+        }
+    }
+
     // If we're within the threshold of home, then we're done.
     if(distToHome <= kReachedPositionThreshold)
     {

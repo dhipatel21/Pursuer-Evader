@@ -27,7 +27,7 @@ struct MotionPlannerParams
     * walls.
     */
     MotionPlannerParams(void)
-    : robotRadius(0.2) // by default, have a little extra slop to keep the robot from getting too close to the walls
+    : robotRadius(0.1) // by default, have a little extra slop to keep the robot from getting too close to the walls
     {
     }
 };
@@ -134,6 +134,8 @@ public:
     * \param    params          New parameters for the motion planner
     */
     void setParams(const MotionPlannerParams& params);
+
+    void setSearchParams(const SearchParams& params);
 
     void setPrevGoal(const pose_xyt_t& goal) { prev_goal = goal; }
 
