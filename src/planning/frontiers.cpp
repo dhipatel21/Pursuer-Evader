@@ -1,5 +1,5 @@
 #include <planning/frontiers.hpp>
-#include <math>
+#include <math.h>
 
 std::vector<frontier_t> find_map_frontiers(const OccupancyGrid& map, 
                                            const pose_xyt_t& robotPose,
@@ -116,7 +116,7 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
         // otherwise centroid is not suitable, so radial search to find suitable cells on frontier
         int radius = 0.02;
         while (radius < 1){
-            for (float angle = 0; angle < 2*math.pi; angle += (math.pi / 8)){
+            for (float angle = 0; angle < 2*M_PI; angle += (M_PI / 8.0)){
 
                 float dx = radius * cos(angle);
                 float dy = radius * sin(angle);
@@ -125,7 +125,6 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
                 cell_t cell = global_position_to_grid_cell(coordinate, map);
 
                 if(map.isCellInGrid(cell.x, cell.y)         // cell is in the grid
-                    && map.logOdds(cell.x, cell.y) < 0          // cell is unoccupied by an obstacle
                     && planner.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
                     {
                         plannedPath = planner.planPath(robotPose, newPose);

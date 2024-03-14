@@ -47,7 +47,7 @@ Exploration::Exploration(int32_t teamNumber,
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
     
     MotionPlannerParams params;
-    params.robotRadius = 0.2;
+    params.robotRadius = 0.1;
     planner_.setParams(params);
 }
 
@@ -244,7 +244,7 @@ int8_t Exploration::executeExploringMap(bool initialize)
     *       -- You will likely be able to see the frontier before actually reaching the end of the path leading to it.
     */
     
-    if (initialize) {
+     if (initialize) {
         currentPath_.path_length = 0;
     }
 
@@ -262,7 +262,7 @@ int8_t Exploration::executeExploringMap(bool initialize)
     
     if (!frontiers_.empty() && (initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1)) {
         currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_);
-        if (currentPath_.path.size() == 0) {
+        if (currentPath_.path_length <= 1) {
             std::cout << "No path to frontier" << std::endl;
             return exploration_status_t::STATE_EXPLORING_MAP;
         }
@@ -286,9 +286,7 @@ int8_t Exploration::executeExploringMap(bool initialize)
         // }
         // while (currentPath_.path_length <= 1);
     }
-    else {
-        return exploration_status_t::STATE_RETURNING_HOME;
-    }
+
 
     /////////////////////////////// End student code ///////////////////////////////
 
