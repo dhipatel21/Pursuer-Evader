@@ -311,6 +311,7 @@ int8_t Exploration::executeExploringMap(bool initialize)
     // Otherwise, there are frontiers, but no valid path exists, so exploration has failed
     else
     {
+        std::cout << "ERROR: PATH LENGTH IS " << currentPath_.path.size() << "\n";
         status.status = exploration_status_t::STATUS_FAILED;
     }
     

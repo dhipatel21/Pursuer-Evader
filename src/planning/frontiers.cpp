@@ -94,10 +94,11 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
     // check for path to each centroid
     for (auto &&centroid : centroids){
         cell_t centroidCell = global_position_to_grid_cell(centroid.centroid, map);
+
         pose_xyt_t newPose (robotPose);
 
-        newPose.x = centroidCell.x;
-        newPose.y = centroidCell.y;
+        newPose.x = centroid.centroid.x;
+        newPose.y = centroid.centroid.y;
 
         // if cell is suitable goal pose, we're good
         if(map.isCellInGrid(centroidCell.x, centroidCell.y) // cell is in the grid
