@@ -32,7 +32,8 @@ robot_path_t MotionPlanner::planPath(const pose_xyt_t& start,
         failedPath.path_length = 1;
         failedPath.path.push_back(start);
 
-        std::cout << "INFO: path rejected due to invalid goal\n";        
+        std::cout << "INFO: path rejected due to invalid goal\n";
+        std::cout << "The goal was x " << goal.x << " y " << goal.y << "\n";
 
         return failedPath;
     }

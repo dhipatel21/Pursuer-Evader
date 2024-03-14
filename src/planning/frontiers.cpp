@@ -101,30 +101,29 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
 
         // if cell is suitable goal pose, we're good
         if(map.isCellInGrid(centroidCell.x, centroidCell.y) // cell is in the grid
-        && map.logOdds(centroidCell.x, centroidCell.y) < 0  // cell is unoccupied by an obstacle
-        && planner.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
+            && map.logOdds(centroidCell.x, centroidCell.y) < 0  // cell is unoccupied by an obstacle
+            && planner.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
         {
             plannedPath = planner.planPath(robotPose, newPose);
 
             if (planner.isPathSafe(plannedPath)){   // is path still safe
                 return plannedPath;
             }
-        }
-
+        }   
+        
         // otherwise centroid is not suitable, so radial search to find suitable cells on frontier
-        int radius = 1;
-        while (radius < 10){
-            for (float angle = 0; angle < 360; angle += 22.5){
+        int radius = 0.02;
+        while (radius < 1){
+            for (float angle = 0; angle < 360; angle += 30){
                 float dx = radius * cos(angle);
                 float dy = radius * sin(angle);
                 
                 Point<double> coordinate (centroid.centroid.x + dx, centroid.centroid.y + dy);
                 cell_t cell = global_position_to_grid_cell(coordinate, map);
 
-                if(is_frontier_cell(cell.x, cell.y, map)    // cell is on the frontier
-                && map.isCellInGrid(cell.x, cell.y)         // cell is in the grid
-                && map.logOdds(cell.x, cell.y) < 0          // cell is unoccupied by an obstacle
-                && planner.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
+                if(map.isCellInGrid(cell.x, cell.y)         // cell is in the grid
+                    && map.logOdds(cell.x, cell.y) < 0          // cell is unoccupied by an obstacle
+                    && planner.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
                     {
                         plannedPath = planner.planPath(robotPose, newPose);
 
@@ -133,7 +132,7 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
                         }
                     }
                 
-                ++radius;
+                radius += 0.02;
             }
         }
     }
