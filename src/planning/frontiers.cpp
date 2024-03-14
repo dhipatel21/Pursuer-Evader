@@ -1,4 +1,5 @@
 #include <planning/frontiers.hpp>
+#include <math>
 
 std::vector<frontier_t> find_map_frontiers(const OccupancyGrid& map, 
                                            const pose_xyt_t& robotPose,
@@ -115,7 +116,8 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
         // otherwise centroid is not suitable, so radial search to find suitable cells on frontier
         int radius = 0.02;
         while (radius < 1){
-            for (float angle = 0; angle < 360; angle += 30){
+            for (float angle = 0; angle < 2*math.pi; angle += (math.pi / 8)){
+
                 float dx = radius * cos(angle);
                 float dy = radius * sin(angle);
                 
