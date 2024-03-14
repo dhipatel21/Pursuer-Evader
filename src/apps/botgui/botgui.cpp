@@ -53,11 +53,6 @@ BotGui::BotGui(lcm::LCM* lcmInstance, int argc, char** argv, int widthInPixels, 
     traceColors_.push_back(vx_olive);
     traceColors_.push_back(vx_plum);
     traceColors_.push_back(vx_teal);
-
-    planner_params.robotRadius = 0.005;
-    search_params.minDistanceToObstacle = 0.005;
-    search_params.maxDistanceWithCost = 100;
-    search_params.distanceCostExponent = 0.1;
 }
 
 
@@ -129,8 +124,6 @@ int BotGui::onMouseEvent(vx_layer_t* layer,
         
         MotionPlanner planner;
         planner.setMap(map_);
-        planner.setParams(planner_params);
-        planner.setSearchParams(search_params);
         robot_path_t plannedPath = planner.planPath(slamPose_, target);
         distances_ = planner.obstacleDistances();
         lcmInstance_->publish(CONTROLLER_PATH_CHANNEL, &plannedPath);
@@ -232,8 +225,6 @@ void BotGui::render(void)
     if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(showDistancesCheck_)))
     {
         MotionPlanner planner;
-        planner.setParams(planner_params);
-        planner.setSearchParams(search_params);
         planner.setMap(map_);
         distances_ = planner.obstacleDistances();
 
