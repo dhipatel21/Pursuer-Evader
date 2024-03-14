@@ -265,6 +265,7 @@ int8_t Exploration::executeExploringMap(bool initialize)
     }
     else {
         goalDist = std::numeric_limits<float>::max();
+
     }
     
     if (!frontiers_.empty() && (initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1)) {
@@ -363,7 +364,7 @@ int8_t Exploration::executeReturningHome(bool initialize)
     
     double distToHome = distance_between_points(Point<float>(homePose_.x, homePose_.y), 
                                                 Point<float>(currentPose_.x, currentPose_.y));
-    
+
     if (distToHome <= kReachedPositionThreshold) {
         if (currentPath_.path.size() <= 1 || !planner_.isPathSafe(currentPath_)) {
             currentPath_ = planner_.planPath(currentPose_, homePose_);
