@@ -254,7 +254,7 @@ int8_t Exploration::executeExploringMap(bool initialize)
     
     // THESE DO NOTHING SO FAR
     Point<float> currentPosition (currentPose_.x, currentPose_.y);
-    Point<float> goal = currentPath_.path.back();
+    Point<float> goal (currentPath_.path.back().x, currentPath_.path.back().y);
 
     float goalDist = distance_between_points(currentPosition, goal);
     
@@ -299,7 +299,6 @@ int8_t Exploration::executeExploringMap(bool initialize)
         //     currentPath_ = planner_.planPath(currentPose_, goal_pose);
         // }
         // while (currentPath_.path_length <= 1);
-    }
 
 
     /////////////////////////////// End student code ///////////////////////////////
