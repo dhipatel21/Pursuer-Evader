@@ -274,11 +274,7 @@ int8_t Exploration::executeExploringMap(bool initialize)
     //    || currentPath_.path_length <= 1)) {
     
     //     currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_);
-        
-    if (currentPath_.path_length <= 1) {
-        std::cout << "No path to frontier" << std::endl;
-        return exploration_status_t::STATE_EXPLORING_MAP;
-    }
+
     // }
 
         // currentPath_.path_length = 1;
@@ -317,6 +313,12 @@ int8_t Exploration::executeExploringMap(bool initialize)
     // Else if there's a path to follow, then we're still in the process of exploring
     else if(currentPath_.path.size() > 1)
     {
+        status.status = exploration_status_t::STATUS_IN_PROGRESS;
+    }
+    // Else there's no path to follow, but we're close enough to consider the pathing good
+    else if (currentPath_.path_length <= 1 || goalDist < 2*currentMap_.metersPerCell())
+    {
+        std::cout << "No path to frontier" << std::endl;
         status.status = exploration_status_t::STATUS_IN_PROGRESS;
     }
     // Otherwise, there are frontiers, but no valid path exists, so exploration has failed
