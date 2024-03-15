@@ -244,28 +244,42 @@ int8_t Exploration::executeExploringMap(bool initialize)
     *       -- You will likely be able to see the frontier before actually reaching the end of the path leading to it.
     */
     
-     if (initialize) {
-        currentPath_.path_length = 0;
-    }
+    planner_.setMap(currentMap_); // update map from SLAM
 
-    frontiers_ = find_map_frontiers(currentMap_, currentPose_);
-    planner_.setMap(currentMap_);
+    frontiers_ = find_map_frontiers(currentMap_, currentPose_); // find frontiers
 
-    float goalDist = 0;
-    if (currentPath_.path_length > 1) {
-        goalDist = distance_between_points(Point<float>(currentPose_.x, currentPose_.y), Point<float>(currentPath_.path.back().x, currentPath_.path.back().y));
-    }
-    else {
-        goalDist = std::numeric_limits<float>::max();
-
+    if (!frontiers_.empty()){ // still frontiers left to explore
+        currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_); // 
     }
     
-    if (!frontiers_.empty() && (initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1)) {
-        currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_);
-        if (currentPath_.path_length <= 1) {
-            std::cout << "No path to frontier" << std::endl;
-            return exploration_status_t::STATE_EXPLORING_MAP;
-        }
+    // THESE DO NOTHING SO FAR
+    Point<float> currentPosition (currentPose_.x, currentPose_.y);
+    Point<float> goal = currentPath_.path.back();
+
+    float goalDist = distance_between_points(currentPosition, goal);
+    
+    // float goalDist = 0;
+
+    // if (currentPath_.path_length > 1) {
+    //     goalDist = distance_between_points(Point<float>(currentPose_.x, currentPose_.y), Point<float>(currentPath_.path.back().x, currentPath_.path.back().y));
+    // }
+
+    // else {
+    //     goalDist = std::numeric_limits<float>::max();
+    // }
+    
+    // if (!frontiers_.empty() && 
+    //    (initialize 
+    //    || !planner_.isPathSafe(currentPath_) 
+    //    || goalDist < 2*currentMap_.metersPerCell() 
+    //    || currentPath_.path_length <= 1)) {
+        
+    //     currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_);
+        
+    //     if (currentPath_.path_length <= 1) {
+    //         std::cout << "No path to frontier" << std::endl;
+    //         return exploration_status_t::STATE_EXPLORING_MAP;
+    //     }
 
         // currentPath_.path_length = 1;
         // int cell_idx = 0;

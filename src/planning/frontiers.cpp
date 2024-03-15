@@ -124,7 +124,7 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
                 Point<double> coordinate (centroid.centroid.x + dx, centroid.centroid.y + dy);
                 cell_t cell = global_position_to_grid_cell(coordinate, map);
 
-                if(map.isCellInGrid(cell.x, cell.y)         // cell is in the grid
+                if(map.isCellInGrid(cell.x, cell.y)             // cell is in the grid
                     && planner.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
                     {
                         plannedPath = planner.planPath(robotPose, newPose);
@@ -165,9 +165,11 @@ Point<float> find_frontier_centroid(frontier_t frontier)
 
     Point<float> centroid (centroidX, centroidY);
 
-    auto const it = std::lower_bound(frontier.cells.begin(), frontier.cells.end(), centroid);
+    // auto const it = std::lower_bound(frontier.cells.begin(), frontier.cells.end(), centroid);
 
-    return *it;
+    // return *it;
+
+    return centroid;
 }
 
 bool is_frontier_cell(int x, int y, const OccupancyGrid& map)
