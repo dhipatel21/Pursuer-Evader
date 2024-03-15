@@ -106,6 +106,7 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
             && map.logOdds(centroidCell.x, centroidCell.y) < 0  // cell is unoccupied by an obstacle
             && planner.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
         {
+            std::cout << newPose.x << " " << newPose.y << "\n";
             plannedPath = planner.planPath(robotPose, newPose);
 
             if (planner.isPathSafe(plannedPath)){   // is path still safe
@@ -114,15 +115,21 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
         }   
         
         // otherwise centroid is not suitable, so radial search to find suitable cells on frontier
-        int radius = 0.02;
+        float radius = 0.02;
         while (radius < 1){
+            std::cout << "radius: " << radius << "\n";
             for (float angle = 0; angle < 2*M_PI; angle += (M_PI / 8.0)){
 
                 float dx = radius * cos(angle);
                 float dy = radius * sin(angle);
-                
+                std::cout << dx << " " << dy << "\n";
                 Point<double> coordinate (centroid.centroid.x + dx, centroid.centroid.y + dy);
                 cell_t cell = global_position_to_grid_cell(coordinate, map);
+                
+                newPose.x = coordinate.x;
+                newPose.y = coordinate.y;
+                
+                std::cout << newPose.x << " " << newPose.y << "\n";
 
                 if(map.isCellInGrid(cell.x, cell.y)             // cell is in the grid
                     && planner.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
@@ -133,9 +140,8 @@ robot_path_t plan_path_to_frontier(const std::vector<frontier_t>& frontiers,
                             return plannedPath;
                         }
                     }
-                
-                radius += 0.02;
             }
+            radius += 0.02;
         }
     }
 

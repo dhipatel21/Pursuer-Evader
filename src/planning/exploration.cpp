@@ -252,34 +252,34 @@ int8_t Exploration::executeExploringMap(bool initialize)
         currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_); // 
     }
     
-    // THESE DO NOTHING SO FAR
-    Point<float> currentPosition (currentPose_.x, currentPose_.y);
-    Point<float> goal (currentPath_.path.back().x, currentPath_.path.back().y);
+    // Point<float> currentPosition (currentPose_.x, currentPose_.y);
+    // Point<float> goal (currentPath_.path.back().x, currentPath_.path.back().y);
 
-    float goalDist = distance_between_points(currentPosition, goal);
+    // float goalDist = distance_between_points(currentPosition, goal);
     
-    // float goalDist = 0;
+    float goalDist = 0;
 
-    // if (currentPath_.path_length > 1) {
-    //     goalDist = distance_between_points(Point<float>(currentPose_.x, currentPose_.y), Point<float>(currentPath_.path.back().x, currentPath_.path.back().y));
-    // }
+    if (currentPath_.path_length > 1) {
+        goalDist = distance_between_points(Point<float>(currentPose_.x, currentPose_.y), Point<float>(currentPath_.path.back().x, currentPath_.path.back().y));
+    }
 
-    // else {
-    //     goalDist = std::numeric_limits<float>::max();
-    // }
+    else {
+        goalDist = std::numeric_limits<float>::max();
+    }
     
     // if (!frontiers_.empty() && 
     //    (initialize 
     //    || !planner_.isPathSafe(currentPath_) 
     //    || goalDist < 2*currentMap_.metersPerCell() 
     //    || currentPath_.path_length <= 1)) {
-        
+    
     //     currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_);
         
-    //     if (currentPath_.path_length <= 1) {
-    //         std::cout << "No path to frontier" << std::endl;
-    //         return exploration_status_t::STATE_EXPLORING_MAP;
-    //     }
+    if (currentPath_.path_length <= 1) {
+        std::cout << "No path to frontier" << std::endl;
+        return exploration_status_t::STATE_EXPLORING_MAP;
+    }
+    // }
 
         // currentPath_.path_length = 1;
         // int cell_idx = 0;
