@@ -329,7 +329,7 @@ private:
     void subscribeToLcm()
     {
         lcmInstance->subscribe(ODOMETRY_CHANNEL, &MotionController::handleOdometry, this);
-        // lcmInstance->subscribe(SLAM_POSE_CHANNEL, &MotionController::handlePose, this);
+        lcmInstance->subscribe(SLAM_POSE_CHANNEL, &MotionController::handlePose, this);
         lcmInstance->subscribe(CONTROLLER_PATH_CHANNEL, &MotionController::handlePath, this);
         lcmInstance->subscribe(MBOT_TIMESYNC_CHANNEL, &MotionController::handleTimesync, this);
     }
@@ -356,12 +356,12 @@ int main(int argc, char** argv)
 
                 // Limit command values
                 // Fwd vel
-                float max_fwd_vel = 0.3;
+                float max_fwd_vel = 0.15;
                 if (cmd.trans_v > max_fwd_vel) cmd.trans_v = max_fwd_vel;
                 else if (cmd.trans_v < -max_fwd_vel) cmd.trans_v = -max_fwd_vel;
 
                 // Angular vel
-                float max_ang_vel = M_PI / 2;
+                float max_ang_vel = M_PI / 4;
                 if (cmd.angular_v > max_ang_vel) cmd.angular_v = max_ang_vel;
                 else if (cmd.angular_v < -max_ang_vel) cmd.angular_v = -max_ang_vel;
                 

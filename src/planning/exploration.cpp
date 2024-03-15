@@ -47,7 +47,7 @@ Exploration::Exploration(int32_t teamNumber,
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
     
     MotionPlannerParams params;
-    params.robotRadius = 0.1;
+    params.robotRadius = 0.15;
     planner_.setParams(params);
 }
 
@@ -373,11 +373,9 @@ int8_t Exploration::executeReturningHome(bool initialize)
     double distToHome = distance_between_points(Point<float>(homePose_.x, homePose_.y), 
                                                 Point<float>(currentPose_.x, currentPose_.y));
 
-    if (distToHome <= kReachedPositionThreshold) {
-        if (currentPath_.path.size() <= 1 || !planner_.isPathSafe(currentPath_)) {
-            currentPath_ = planner_.planPath(currentPose_, homePose_);
-        }
-    }
+    // if (currentPath_.path.size() <= 1 || !planner_.isPathSafe(currentPath_)) {
+    currentPath_ = planner_.planPath(currentPose_, homePose_);
+    // }
 
     // If we're within the threshold of home, then we're done.
     if(distToHome <= kReachedPositionThreshold)
@@ -398,9 +396,13 @@ int8_t Exploration::executeReturningHome(bool initialize)
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
     
     ////////////////////////////   Determine the next state    ////////////////////////
-    if(status.status == exploration_status_t::STATUS_IN_PROGRESS)
+    if (status.status == exploration_status_t::STATUS_IN_PROGRESS)
     {
         return exploration_status_t::STATE_RETURNING_HOME;
+    }
+    if (status.status == exploration_status_t::STATUS_COMPLETE)
+    {
+        return exploration_status_t::STATE_COMPLETED_EXPLORATION;
     }
     else // if(status.status == exploration_status_t::STATUS_FAILED)
     {
