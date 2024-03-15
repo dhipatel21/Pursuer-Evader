@@ -14,7 +14,7 @@ def is_between(a, b, c):
 
 sys.path.append("lcmtypes")
 
-WHEEL_BASE = 0.15
+WHEEL_BASE = 0.165
 WHEEL_DIAMETER = 0.084
 GEAR_RATIO = 78
 ENCODER_RES = 20
