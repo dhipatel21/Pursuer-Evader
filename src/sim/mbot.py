@@ -28,7 +28,7 @@ class Mbot(pygame.sprite.Sprite):
         stop = mbot_motor_command_t()
         stop.utime = int(0)
         self._current_motor_commands = [stop]
-        self._radius = 0.1
+        self._radius = 0.15
         # Initialize trajectory to all 0 poses from now - trajectory_length to now for every trajectory step in time
         self._trajectory_length = 10.0  # Seconds
         self._trajectory_step = 0.005  # Seconds
