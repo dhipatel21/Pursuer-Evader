@@ -3,7 +3,7 @@
 #include <iostream>
 
 #define VENDOR_ID 0x2752
-#define PRODUCT_ID 0x1C
+#define PRODUCT_ID 0x001C
 
 int listen(unsigned char* data);
 
