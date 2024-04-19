@@ -1,13 +1,31 @@
-import subprocess
+import wave
+import pyaudio
 
-def play_audio(file_path, device):
-    # Construct the command
-    command = ["aplay", "--device=" + device, file_path]
+def play_wav(file_path):
+    # Open the WAV file
+    wf = wave.open(file_path, 'rb')
 
-    # Execute the command
-    subprocess.run(command)
+    # Initialize PyAudio
+    p = pyaudio.PyAudio()
 
-# Example usage:
-file_path = "piano2.wav"    # replace with our actual audio files
-device = "hw:0,0"
-play_audio(file_path, device)
+    # Open a stream for playback
+    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                    channels=wf.getnchannels(),
+                    rate=wf.getframerate(),
+                    output=True)
+
+    # Read data from the WAV file and play it
+    data = wf.readframes(1024)
+    while data:
+        stream.write(data)
+        data = wf.readframes(1024)
+
+    # Stop and close the stream
+    stream.stop_stream()
+    stream.close()
+
+    # Terminate PyAudio
+    p.terminate()
+
+
+play_wav("piano2.wav")
