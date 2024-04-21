@@ -124,10 +124,10 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
 
                     lcm.publish("april tag", msg.encode()) # TODO : Handle off command in algo after receiving distance?
 
-                    # if distance < threshold:
-                    #     # TODO: send turn off command over LCM
-                    #     print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
-                    #     play_wav('piano2.wav')   # replace with actual end condition sound
+                    if distance < threshold:
+                        # TODO: send turn off command over LCM
+                        print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
+                        play_wav('3khz.wav')   # replace with actual end condition sound
 
             if output_stream:
                 output.write(overlay)
