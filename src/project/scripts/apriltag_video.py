@@ -7,6 +7,10 @@ import apriltag
 import numpy as np
 import subprocess
 
+import time
+from apriltag_msg import apriltag_msg
+from lcm import LCM
+
 ################################################################################
 threshold = 0.2  # TODO: Adjust based on testing
 
@@ -71,6 +75,7 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
     Either install the DLL in the appropriate system-wide
     location, or specify your own search paths as needed.
     '''
+    lcm = LCM()
 
     detector = apriltag.Detector(options, searchpath=apriltag._get_dll_path())
 
@@ -111,10 +116,18 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
                 for i, detection in enumerate(detections):
                     distance = calculate_distance(i, poses)
                     # print("Distance to AprilTag ", detection.tag_id, ': ', distance)
-                    if distance < threshold:
-                        # TODO: send turn off command over LCM
-                        print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
-                        play_wav('piano2.wav')   # replace with actual end condition sound
+
+                    # Message Handling
+                    msg = apriltag_msg()
+                    msg.timestamp = int(time.time() * 1000000)  # Current timestamp in microseconds
+                    msg.distance = distance
+
+                    lcm.publish("april tag", msg.encode()) # TODO : Handle off command in algo after receiving distance?
+
+                    # if distance < threshold:
+                    #     # TODO: send turn off command over LCM
+                    #     print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
+                    #     play_wav('piano2.wav')   # replace with actual end condition sound
 
             if output_stream:
                 output.write(overlay)

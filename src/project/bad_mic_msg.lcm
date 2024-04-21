@@ -1,0 +1,4 @@
+struct bad_mic_msg {
+    int64_t timestamp;
+    int32_t frequency;
+}
