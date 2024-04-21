@@ -28,4 +28,4 @@ def play_wav(file_path):
     p.terminate()
 
 
-play_wav("3khz.wav")
+play_wav("hello.wav")
