@@ -78,7 +78,6 @@ private:
     
     // Current state and data associated with the update -- use these variables for your exploration computations
     int8_t state_;                      // Current state of the high-level exploration state machine, as defined in exploration_status_t
-    bool  shouldAttemptEscape_;         // Flag indicating if the escaping_map state should be entered after returning_home completes
     pose_xyt_t currentPose_;            // Robot pose to use for computing new paths
     OccupancyGrid currentMap_;          // Map to use for finding frontiers and planning paths to them
     MotionPlanner planner_;             // Planner to use for finding collision-free paths to select frontiers
@@ -86,7 +85,6 @@ private:
     pose_xyt_t homePose_;               // Pose of the robot when it is home, i.e. the initial pose before exploration begins
 
     robot_path_t currentPath_;          // Current path being followed to a frontier or other target, like the home or key poses
-    std::vector<frontier_t> frontiers_; // Current frontiers in the map
     
     // Data coming in from other modules -- used by LCM thread
     pose_xyt_t incomingPose_;           // Temporary storage for the most recently received pose until needed by explore thread
@@ -104,10 +102,8 @@ private:
     pose_xyt_t   currentTarget_;    // Current target robot is driving to
     OccupancyGrid exploredMap_;     // Map found after completing the RETURNING_HOME state
     
-    size_t prev_frontier_size;
     bool pathReceived_;
     int64_t most_recent_path_time;
-//    int8_t path_redundancy_count;
 
     /////////////////////////// End student code ///////////////////////////////
     
@@ -118,8 +114,7 @@ private:
     
     void   executeStateMachine(void);
     int8_t executeInitializing(void);
-    int8_t executeExploringMap(bool initialize);
-    int8_t executeReturningHome(bool initialize);
+    int8_t executeEvade(bool initialize);
     int8_t executeCompleted(bool initialize);
     int8_t executeFailed(bool initialize);
     

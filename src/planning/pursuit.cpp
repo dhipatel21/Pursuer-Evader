@@ -1,6 +1,7 @@
 #include <planning/pursuit.hpp>
 #include <planning/frontiers.hpp>
 #include <planning/planning_channels.h>
+#include <planning/pe_channels.h>
 #include <common/grid_utils.hpp>
 #include <common/timestamp.h>
 #include <mbot/mbot_channels.h>
@@ -154,13 +155,8 @@ void Pursuit::executeStateMachine(void)
                 nextState = executeInitializing();
                 break;
             case exploration_status_t::STATE_EXPLORING_MAP:
-                nextState = executeExploringMap(stateChanged);
+                nextState = executePursuit(stateChanged);
                 break;
-                
-            case exploration_status_t::STATE_RETURNING_HOME:
-                nextState = executeReturningHome(stateChanged);
-                break;
-
             case exploration_status_t::STATE_COMPLETED_EXPLORATION:
                 nextState = executeCompleted(stateChanged);
                 break;
@@ -193,7 +189,7 @@ void Pursuit::executeStateMachine(void)
     if(previousPath.path != currentPath_.path)
     { 
 
-        std::cout << "INFO: Exploration: A new path was created on this iteration. Sending to Mbot:\n";
+        std::cout << "INFO: Pursuit: A new path was created on this iteration. Sending to Mbot:\n";
 
         std::cout << "path timestamp: " << currentPath_.utime << "\npath: ";
 
@@ -209,7 +205,7 @@ void Pursuit::executeStateMachine(void)
 
 }
 
-
+// TODO
 int8_t Pursuit::executeInitializing(void)
 {
     /////////////////////////   Create the status message    //////////////////////////
@@ -225,27 +221,10 @@ int8_t Pursuit::executeInitializing(void)
     return exploration_status_t::STATE_EXPLORING_MAP;
 }
 
-
-int8_t Pursuit::executeExploringMap(bool initialize)
-{
-    //////////////////////// TODO: Implement your method for exploring the map ///////////////////////////
-    /*
-    * NOTES:
-    *   - At the end of each iteration, then (1) or (2) must hold, otherwise exploration is considered to have failed:
-    *       (1) frontiers_.empty() == true      : all frontiers have been explored as determined by find_map_frontiers()
-    *       (2) currentPath_.path_length > 1 : currently following a path to the next frontier
-    * 
-    *   - Use the provided function find_map_frontiers() to find all frontiers in the map.
-    *   - You will need to implement logic to select which frontier to explore.
-    *   - You will need to implement logic to decide when to select a new frontier to explore. Take into consideration:
-    *       -- The map is evolving as you drive, so what previously looked like a safe path might not be once you have
-    *           explored more of the map.
-    *       -- You will likely be able to see the frontier before actually reaching the end of the path leading to it.
-    */
-    
+// TODO
+int8_t Pursuit::executePursuit(bool initialize)
+{    
     planner_.setMap(currentMap_); // update map from SLAM
-
-    frontiers_ = find_map_frontiers(currentMap_, currentPose_); // find frontiers
 
     float goalDist = 0;
     if (currentPath_.path_length > 1) {
@@ -253,11 +232,6 @@ int8_t Pursuit::executeExploringMap(bool initialize)
     }
     else {
         goalDist = std::numeric_limits<float>::max();
-    }
-
-    if (!frontiers_.empty() && (initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1))
-    {
-        currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_); // 
     }
 
 
@@ -315,71 +289,7 @@ int8_t Pursuit::executeExploringMap(bool initialize)
     }
 }
 
-
-int8_t Pursuit::executeReturningHome(bool initialize)
-{
-    //////////////////////// TODO: Implement your method for returning to the home pose ///////////////////////////
-    /*
-    * NOTES:
-    *   - At the end of each iteration, then (1) or (2) must hold, otherwise exploration is considered to have failed:
-    *       (1) dist(currentPose_, targetPose_) < kReachedPositionThreshold  :  reached the home pose
-    *       (2) currentPath_.path_length > 1  :  currently following a path to the home pose
-    */
-    
-
-
-    /////////////////////////////// End student code ///////////////////////////////
-    
-    /////////////////////////   Create the status message    //////////////////////////
-    exploration_status_t status;
-    status.utime = utime_now();
-    status.team_number = teamNumber_;
-    status.state = exploration_status_t::STATE_RETURNING_HOME;
-    
-    double distToHome = distance_between_points(Point<float>(homePose_.x, homePose_.y), 
-                                                Point<float>(currentPose_.x, currentPose_.y));
-
-    // if (currentPath_.path.size() <= 1 || !planner_.isPathSafe(currentPath_)) {
-
-    if ((initialize || !planner_.isPathSafe(currentPath_) || currentPath_.path_length <= 1))
-    {
-        currentPath_ = plan_path_to_frontier(frontiers_, currentPose_, currentMap_, planner_); // 
-    }
-    // }
-
-    // If we're within the threshold of home, then we're done.
-    if(distToHome <= kReachedPositionThreshold)
-    {
-        status.status = exploration_status_t::STATUS_COMPLETE;
-    }
-    // Otherwise, if there's a path, then keep following it
-    else if(currentPath_.path.size() > 1)
-    {
-        status.status = exploration_status_t::STATUS_IN_PROGRESS;
-    }
-    // Else, there's no valid path to follow and we aren't home, so we have failed.
-    else
-    {
-        status.status = exploration_status_t::STATUS_FAILED;
-    }
-    
-    lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
-    
-    ////////////////////////////   Determine the next state    ////////////////////////
-    if (status.status == exploration_status_t::STATUS_IN_PROGRESS)
-    {
-        return exploration_status_t::STATE_RETURNING_HOME;
-    }
-    if (status.status == exploration_status_t::STATUS_COMPLETE)
-    {
-        return exploration_status_t::STATE_COMPLETED_EXPLORATION;
-    }
-    else // if(status.status == exploration_status_t::STATUS_FAILED)
-    {
-        return exploration_status_t::STATE_FAILED_EXPLORATION;
-    }
-}
-
+// TODO
 int8_t Pursuit::executeCompleted(bool initialize)
 {
     // Stay in the completed state forever because exploration only explores a single map.
@@ -394,7 +304,7 @@ int8_t Pursuit::executeCompleted(bool initialize)
     return exploration_status_t::STATE_COMPLETED_EXPLORATION;
 }
 
-
+// TODO
 int8_t Pursuit::executeFailed(bool initialize)
 {
     // Send the execute failed forever. There is no way to recover.
