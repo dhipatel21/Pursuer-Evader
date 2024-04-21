@@ -9,16 +9,18 @@ except ImportError:
     from io import BytesIO
 import struct
 
-import int32_tm
-
 class good_mic_msg(object):
     __slots__ = ["timestamp", "VAD", "angle", "dir"]
+
+    __typenames__ = ["int64_t", "int32_t", "int32_t", "int32_t"]
+
+    __dimensions__ = [None, None, None, None]
 
     def __init__(self):
         self.timestamp = 0
         self.VAD = 0
         self.angle = 0
-        self.dir = int32_tm()
+        self.dir = 0
 
     def encode(self):
         buf = BytesIO()
@@ -27,9 +29,7 @@ class good_mic_msg(object):
         return buf.getvalue()
 
     def _encode_one(self, buf):
-        buf.write(struct.pack(">qii", self.timestamp, self.VAD, self.angle))
-        assert self.dir._get_packed_fingerprint() == int32_tm._get_packed_fingerprint()
-        self.dir._encode_one(buf)
+        buf.write(struct.pack(">qiii", self.timestamp, self.VAD, self.angle, self.dir))
 
     def decode(data):
         if hasattr(data, 'read'):
@@ -43,17 +43,14 @@ class good_mic_msg(object):
 
     def _decode_one(buf):
         self = good_mic_msg()
-        self.timestamp, self.VAD, self.angle = struct.unpack(">qii", buf.read(16))
-        self.dir = int32_tm._decode_one(buf)
+        self.timestamp, self.VAD, self.angle, self.dir = struct.unpack(">qiii", buf.read(20))
         return self
     _decode_one = staticmethod(_decode_one)
 
-    _hash = None
     def _get_hash_recursive(parents):
         if good_mic_msg in parents: return 0
-        newparents = parents + [good_mic_msg]
-        tmphash = (0xd4dfe413d885b417+ int32_tm._get_hash_recursive(newparents)) & 0xffffffffffffffff
-        tmphash  = (((tmphash<<1)&0xffffffffffffffff)  + (tmphash>>63)) & 0xffffffffffffffff
+        tmphash = (0xed51550b1babf4c4) & 0xffffffffffffffff
+        tmphash  = (((tmphash<<1)&0xffffffffffffffff) + (tmphash>>63)) & 0xffffffffffffffff
         return tmphash
     _get_hash_recursive = staticmethod(_get_hash_recursive)
     _packed_fingerprint = None
@@ -63,4 +60,8 @@ class good_mic_msg(object):
             good_mic_msg._packed_fingerprint = struct.pack(">Q", good_mic_msg._get_hash_recursive([]))
         return good_mic_msg._packed_fingerprint
     _get_packed_fingerprint = staticmethod(_get_packed_fingerprint)
+
+    def get_hash(self):
+        """Get the LCM hash of the struct"""
+        return struct.unpack(">Q", good_mic_msg._get_packed_fingerprint())[0]
 

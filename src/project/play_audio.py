@@ -28,4 +28,4 @@ def play_wav(file_path):
     p.terminate()
 
 
-play_wav("piano2.wav")
+play_wav("3khz.wav")

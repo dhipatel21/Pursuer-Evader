@@ -2,5 +2,5 @@ struct good_mic_msg {
     int64_t timestamp;
     int32_t VAD;
     int32_t angle;
-    int32_tm dir;
+    int32_t dir;
 }
