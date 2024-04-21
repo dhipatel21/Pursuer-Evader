@@ -19,6 +19,7 @@ def audio_callback(indata, frames, time, status):
     # Find the dominant frequency
     dominant_frequency = frequencies[np.argmax(np.abs(fft_data))]
     if dominant_frequency >= THRESHOLD_FREQUENCY:
+        sd.stop()
         print(f"Sound detected at frequency: {dominant_frequency:.2f} Hz")
 
         # Message Handling
