@@ -71,6 +71,8 @@ public:
     void handleMap(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const occupancy_grid_t* map);
     void handlePose(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* pose);
     void handleConfirmation(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const message_received_t* confirm);
+    void handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* request);
+    void handleHeading(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* heading);
 
 private:
     
@@ -100,6 +102,7 @@ private:
     /////////// TODO: Add any state variables you might need here //////////////
     
     pose_xyt_t   currentTarget_;    // Current target robot is driving to
+    pose_xyt_t   evaderInfo_;    // Info about evader: [x y] = distance, [theta] = relative heading
     OccupancyGrid exploredMap_;     // Map found after completing the RETURNING_HOME state
     
     bool pathReceived_;

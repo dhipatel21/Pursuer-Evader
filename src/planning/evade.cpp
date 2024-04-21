@@ -35,6 +35,7 @@ Evade::Evade(int32_t teamNumber,
     lcmInstance_->subscribe(SLAM_MAP_CHANNEL, &Evade::handleMap, this);
     lcmInstance_->subscribe(SLAM_POSE_CHANNEL, &Evade::handlePose, this);
     lcmInstance_->subscribe(MESSAGE_CONFIRMATION_CHANNEL, &Evade::handleConfirmation, this);
+    lcmInstance_->subscribe(PE_REQUEST_CHANNEL, &Evade::handleRequest, this);
     
     // Send an initial message indicating that the exploration module is initializing. Once the first map and pose are
     // received, then it will change to the exploring map state.
@@ -96,6 +97,15 @@ void Evade::handleConfirmation(const lcm::ReceiveBuffer* rbuf, const std::string
     if(confirm->channel == CONTROLLER_PATH_CHANNEL && confirm->creation_time == most_recent_path_time) pathReceived_ = true;
 }
 
+void Evade::handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* request)
+{
+    std::lock_guard<std::mutex> autoLock(dataLock_);
+    currentTarget_.theta = request->theta;
+    currentTarget_.utime = request->utime;
+    currentTarget_.x = request->x;
+    currentTarget_.y = request->y;
+}
+
 bool Evade::isReadyToUpdate(void)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);
@@ -132,12 +142,12 @@ void Evade::copyDataForUpdate(void)
     {
         homePose_ = incomingPose_;
         haveHomePose_ = true;
-        std::cout << "INFO: Exploration: Set home pose:" << homePose_.x << ',' << homePose_.y << ',' 
+        std::cout << "INFO: Evade: Set home pose:" << homePose_.x << ',' << homePose_.y << ',' 
             << homePose_.theta << '\n';
     }
 }
 
-
+// TODO
 void Evade::executeStateMachine(void)
 {
     bool stateChanged = false;

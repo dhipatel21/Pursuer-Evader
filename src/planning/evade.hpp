@@ -71,6 +71,8 @@ public:
     void handleMap(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const occupancy_grid_t* map);
     void handlePose(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* pose);
     void handleConfirmation(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const message_received_t* confirm);
+    void handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* request);
+    void handleShutdown(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const exploration_status_t* status);
 
 private:
     

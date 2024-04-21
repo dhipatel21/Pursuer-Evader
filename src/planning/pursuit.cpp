@@ -35,6 +35,8 @@ Pursuit::Pursuit(int32_t teamNumber,
     lcmInstance_->subscribe(SLAM_MAP_CHANNEL, &Pursuit::handleMap, this);
     lcmInstance_->subscribe(SLAM_POSE_CHANNEL, &Pursuit::handlePose, this);
     lcmInstance_->subscribe(MESSAGE_CONFIRMATION_CHANNEL, &Pursuit::handleConfirmation, this);
+    lcmInstance_->subscribe(PE_REQUEST_CHANNEL, &Pursuit::handleRequest, this);
+    lcmInstance_->subscribe(PE_HEADING_CHANNEL, &Pursuit::handleHeading, this);
     
     // Send an initial message indicating that the exploration module is initializing. Once the first map and pose are
     // received, then it will change to the exploring map state.
@@ -96,6 +98,24 @@ void Pursuit::handleConfirmation(const lcm::ReceiveBuffer* rbuf, const std::stri
     if(confirm->channel == CONTROLLER_PATH_CHANNEL && confirm->creation_time == most_recent_path_time) pathReceived_ = true;
 }
 
+void Pursuit::handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* request)
+{
+    std::lock_guard<std::mutex> autoLock(dataLock_);
+    currentTarget_.theta = request->theta;
+    currentTarget_.utime = request->utime;
+    currentTarget_.x = request->x;
+    currentTarget_.y = request->y;
+}
+
+void Pursuit::handleHeading(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* heading)
+{
+    std::lock_guard<std::mutex> autoLock(dataLock_);
+    evaderInfo_.theta = heading->theta;
+    evaderInfo_.utime = heading->utime;
+    evaderInfo_.x = heading->x;
+    evaderInfo_.y = heading->y;
+}
+
 bool Pursuit::isReadyToUpdate(void)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);
@@ -132,12 +152,12 @@ void Pursuit::copyDataForUpdate(void)
     {
         homePose_ = incomingPose_;
         haveHomePose_ = true;
-        std::cout << "INFO: Exploration: Set home pose:" << homePose_.x << ',' << homePose_.y << ',' 
+        std::cout << "INFO: Pursuit: Set home pose:" << homePose_.x << ',' << homePose_.y << ',' 
             << homePose_.theta << '\n';
     }
 }
 
-
+// TODO
 void Pursuit::executeStateMachine(void)
 {
     bool stateChanged = false;
@@ -154,9 +174,11 @@ void Pursuit::executeStateMachine(void)
             case exploration_status_t::STATE_INITIALIZING:
                 nextState = executeInitializing();
                 break;
+
             case exploration_status_t::STATE_EXPLORING_MAP:
                 nextState = executePursuit(stateChanged);
                 break;
+
             case exploration_status_t::STATE_COMPLETED_EXPLORATION:
                 nextState = executeCompleted(stateChanged);
                 break;
