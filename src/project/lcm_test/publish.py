@@ -1,15 +1,11 @@
 from lcm import LCM
 
-from msg import msg
+from cam_t import cam_t
 
 lcm = LCM()
-i = 0
-while True:
-    i += 1
-    message = msg()
-    message.var = i
-    lcm.publish("test", message.encode())
 
-    message.var = 10
-    lcm.publish("test 2", message.encode())
+while True:
+    message = cam_t()
+    message.distance = 10
+    lcm.publish("test", message.encode())
 

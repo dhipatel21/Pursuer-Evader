@@ -3,10 +3,12 @@ import lcm
 sys.path.append("../../lcmtypes")
 from pose_xyt_t import pose_xyt_t
 from lcm import LCM
+from cam_t import cam_t
 
 def handler(channel, data):
-    message = pose_xyt_t.decode(data)
-    print(message.x, message.y, message.theta)
+    message = cam_t.decode(data)
+
+    return message
 
 lcm = LCM()
 subscription_1 = lcm.subscribe("cam", handler)
@@ -15,8 +17,5 @@ subscription_1 = lcm.subscribe("cam", handler)
 
 # subscription_3 = lcm.subscribe("cam_3", handler)
 
-try:
-    while True:
-        lcm.handle()
-except KeyboardInterrupt:
-    pass
+while True:
+    lcm.handle()
