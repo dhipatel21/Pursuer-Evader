@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <cassert>
 
+
 const float kReachedPositionThreshold = 0.5f;  // must get within this distance of a position for it to be explored
 
 // Define an equality operator for poses to allow direct comparison of two paths
@@ -51,6 +52,8 @@ Pursuit::Pursuit(int32_t teamNumber,
     MotionPlannerParams params;
     params.robotRadius = 0.15;
     planner_.setParams(params);
+
+    start_time = std::chrono::system_clock::now();
 }
 
 
@@ -157,7 +160,6 @@ void Pursuit::copyDataForUpdate(void)
     }
 }
 
-// TODO
 void Pursuit::executeStateMachine(void)
 {
     bool stateChanged = false;
@@ -227,11 +229,10 @@ void Pursuit::executeStateMachine(void)
 
 }
 
-// TODO
 int8_t Pursuit::executeInitializing(void)
 {
     /////////////////////////   Create the status message    //////////////////////////
-    // Immediately transition to exploring once the first bit of data has arrived
+    // Immediately transition to pursuing once the first bit of data has arrived
     exploration_status_t status;
     status.utime = utime_now();
     status.team_number = teamNumber_;
@@ -248,15 +249,6 @@ int8_t Pursuit::executePursuit(bool initialize)
 {    
     planner_.setMap(currentMap_); // update map from SLAM
 
-    float goalDist = 0;
-    if (currentPath_.path_length > 1) {
-        goalDist = distance_between_points(Point<float>(currentPose_.x, currentPose_.y), Point<float>(currentPath_.path.back().x, currentPath_.path.back().y));
-    }
-    else {
-        goalDist = std::numeric_limits<float>::max();
-    }
-
-
     /////////////////////////////// End student code ///////////////////////////////
 
     /////////////////////////   Create the status message    //////////////////////////
@@ -265,27 +257,26 @@ int8_t Pursuit::executePursuit(bool initialize)
     status.team_number = teamNumber_;
     status.state = exploration_status_t::STATE_EXPLORING_MAP;
     
-    // If no frontiers remain, then exploration is complete
-    if(frontiers_.empty())
+    const auto p1 = std::chrono::system_clock::now();
+    const auto dt = std::chrono::duration_cast<std::chrono::seconds>(
+                   p1.time_since_epoch()).count();
+
+    // If the evader is in range, we win
+    if(evaderInfo_.x < CAPTURE_RADIUS)
     {
         status.status = exploration_status_t::STATUS_COMPLETE;
     }
-    // Else if there's a path to follow, then we're still in the process of exploring
-    else if(currentPath_.path.size() > 1)
+    // Else if time is up, we lose
+    else if(dt > TRIAL_TIME)
     {
-        status.status = exploration_status_t::STATUS_IN_PROGRESS;
+        std::cout << "TIME IS UP; EVADER WINS " << "\n";
+        status.status = exploration_status_t::STATUS_FAILED;
     }
-    // Else there's no path to follow, but we're close enough to consider the pathing good
-    else if (currentPath_.path_length <= 1 || goalDist < 2*currentMap_.metersPerCell())
-    {
-        std::cout << "No path to frontier" << std::endl;
-        status.status = exploration_status_t::STATUS_IN_PROGRESS;
-    }
-    // Otherwise, there are frontiers, but no valid path exists, so exploration has failed
+    // Else we contine
     else
     {
-        std::cout << "ERROR: PATH LENGTH IS " << currentPath_.path.size() << "\n";
-        status.status = exploration_status_t::STATUS_FAILED;
+        std::cout << "Continue pursuit" << std::endl;
+        status.status = exploration_status_t::STATUS_IN_PROGRESS;
     }
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
@@ -311,7 +302,6 @@ int8_t Pursuit::executePursuit(bool initialize)
     }
 }
 
-// TODO
 int8_t Pursuit::executeCompleted(bool initialize)
 {
     // Stay in the completed state forever because exploration only explores a single map.
@@ -322,11 +312,12 @@ int8_t Pursuit::executeCompleted(bool initialize)
     msg.status = exploration_status_t::STATUS_COMPLETE;
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &msg);
+
+    concludePursuit(true);
     
     return exploration_status_t::STATE_COMPLETED_EXPLORATION;
 }
 
-// TODO
 int8_t Pursuit::executeFailed(bool initialize)
 {
     // Send the execute failed forever. There is no way to recover.
@@ -337,6 +328,14 @@ int8_t Pursuit::executeFailed(bool initialize)
     msg.status = exploration_status_t::STATUS_FAILED;
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &msg);
+
+    concludePursuit(false);
     
     return exploration_status_t::STATE_FAILED_EXPLORATION;
+}
+
+// TODO
+void Pursuit::concludePursuit(bool victory) 
+{
+    return;
 }
