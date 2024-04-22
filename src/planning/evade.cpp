@@ -11,6 +11,7 @@
 #include <queue>
 #include <unistd.h>
 #include <cassert>
+#include <chrono>
 
 const float kReachedPositionThreshold = 0.5f;  // must get within this distance of a position for it to be explored
 
@@ -35,6 +36,8 @@ Evade::Evade(int32_t teamNumber,
     lcmInstance_->subscribe(SLAM_MAP_CHANNEL, &Evade::handleMap, this);
     lcmInstance_->subscribe(SLAM_POSE_CHANNEL, &Evade::handlePose, this);
     lcmInstance_->subscribe(MESSAGE_CONFIRMATION_CHANNEL, &Evade::handleConfirmation, this);
+    lcmInstance_->subscribe(PE_REQUEST_CHANNEL, &Evade::handleRequest, this);
+    lcmInstance_->subscribe(PE_SHUTDOWN_CHANNEL, &Evade::handleShutdown, this);
     
     // Send an initial message indicating that the exploration module is initializing. Once the first map and pose are
     // received, then it will change to the exploring map state.
@@ -49,6 +52,8 @@ Evade::Evade(int32_t teamNumber,
     MotionPlannerParams params;
     params.robotRadius = 0.15;
     planner_.setParams(params);
+
+    start_time = std::chrono::system_clock::now();
 }
 
 
@@ -96,6 +101,25 @@ void Evade::handleConfirmation(const lcm::ReceiveBuffer* rbuf, const std::string
     if(confirm->channel == CONTROLLER_PATH_CHANNEL && confirm->creation_time == most_recent_path_time) pathReceived_ = true;
 }
 
+void Evade::handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* request)
+{
+    std::lock_guard<std::mutex> autoLock(dataLock_);
+    currentTarget_.theta = request->theta;
+    currentTarget_.utime = request->utime;
+    currentTarget_.x = request->x;
+    currentTarget_.y = request->y;
+}
+
+// TODO
+void Evade::handleShutdown(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const exploration_status_t* request)
+{
+    std::lock_guard<std::mutex> autoLock(dataLock_);
+    while(1) {
+        std::cout << "SHUTDOWN MESSAGE RECEIVED, SHUTTING DOWN NOW" << std::endl;
+        concludeEvasion(false);
+    }
+}
+
 bool Evade::isReadyToUpdate(void)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);
@@ -132,11 +156,10 @@ void Evade::copyDataForUpdate(void)
     {
         homePose_ = incomingPose_;
         haveHomePose_ = true;
-        std::cout << "INFO: Exploration: Set home pose:" << homePose_.x << ',' << homePose_.y << ',' 
+        std::cout << "INFO: Evade: Set home pose:" << homePose_.x << ',' << homePose_.y << ',' 
             << homePose_.theta << '\n';
     }
 }
-
 
 void Evade::executeStateMachine(void)
 {
@@ -207,11 +230,10 @@ void Evade::executeStateMachine(void)
 
 }
 
-// TODO
 int8_t Evade::executeInitializing(void)
 {
     /////////////////////////   Create the status message    //////////////////////////
-    // Immediately transition to exploring once the first bit of data has arrived
+    // Immediately transition to evading once the first bit of data has arrived
     exploration_status_t status;
     status.utime = utime_now();
     status.team_number = teamNumber_;
@@ -223,19 +245,9 @@ int8_t Evade::executeInitializing(void)
     return exploration_status_t::STATE_EXPLORING_MAP;
 }
 
-// TODO
 int8_t Evade::executeEvade(bool initialize)
 {
     planner_.setMap(currentMap_); // update map from SLAM
-
-    float goalDist = 0;
-    if (currentPath_.path_length > 1) {
-        goalDist = distance_between_points(Point<float>(currentPose_.x, currentPose_.y), Point<float>(currentPath_.path.back().x, currentPath_.path.back().y));
-    }
-    else {
-        goalDist = std::numeric_limits<float>::max();
-    }
-
 
     /////////////////////////////// End student code ///////////////////////////////
 
@@ -244,28 +256,20 @@ int8_t Evade::executeEvade(bool initialize)
     status.utime = utime_now();
     status.team_number = teamNumber_;
     status.state = exploration_status_t::STATE_EXPLORING_MAP;
+
+    const auto p1 = std::chrono::system_clock::now();
+    const auto dt = std::chrono::duration_cast<std::chrono::seconds>(
+                   p1.time_since_epoch()).count();
     
-    // If no frontiers remain, then exploration is complete
-    if(frontiers_.empty())
+    // If time has expired, we win
+    if (dt > TRIAL_TIME)
     {
         status.status = exploration_status_t::STATUS_COMPLETE;
     }
-    // Else if there's a path to follow, then we're still in the process of exploring
-    else if(currentPath_.path.size() > 1)
-    {
-        status.status = exploration_status_t::STATUS_IN_PROGRESS;
-    }
-    // Else there's no path to follow, but we're close enough to consider the pathing good
-    else if (currentPath_.path_length <= 1 || goalDist < 2*currentMap_.metersPerCell())
-    {
-        std::cout << "No path to frontier" << std::endl;
-        status.status = exploration_status_t::STATUS_IN_PROGRESS;
-    }
-    // Otherwise, there are frontiers, but no valid path exists, so exploration has failed
+    // Else we should keep running (we let the shutdown handler tell us we lose)
     else
     {
-        std::cout << "ERROR: PATH LENGTH IS " << currentPath_.path.size() << "\n";
-        status.status = exploration_status_t::STATUS_FAILED;
+        status.status = exploration_status_t::STATUS_IN_PROGRESS;
     }
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
@@ -277,21 +281,16 @@ int8_t Evade::executeEvade(bool initialize)
         case exploration_status_t::STATUS_IN_PROGRESS:
             return exploration_status_t::STATE_EXPLORING_MAP;
             
-        // If exploration is completed, then head home
+        // If evasion is completed, shut down gracefully
         case exploration_status_t::STATUS_COMPLETE:
             return exploration_status_t::STATE_RETURNING_HOME;
             
-        // If something has gone wrong and we can't reach all frontiers, then fail the exploration.
-        case exploration_status_t::STATUS_FAILED:
-            return exploration_status_t::STATE_FAILED_EXPLORATION;
-            
         default:
-            std::cerr << "ERROR: Exploration::executeExploringMap: Set an invalid exploration status. Exploration failed!";
+            std::cerr << "ERROR: Evade::executeEvade: Set an invalid exploration status. Evasion failed!";
             return exploration_status_t::STATE_FAILED_EXPLORATION;
     }
 }
 
-// TODO
 int8_t Evade::executeCompleted(bool initialize)
 {
     // Stay in the completed state forever because exploration only explores a single map.
@@ -302,11 +301,12 @@ int8_t Evade::executeCompleted(bool initialize)
     msg.status = exploration_status_t::STATUS_COMPLETE;
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &msg);
+
+    concludeEvasion(true);
     
     return exploration_status_t::STATE_COMPLETED_EXPLORATION;
 }
 
-// TODO
 int8_t Evade::executeFailed(bool initialize)
 {
     // Send the execute failed forever. There is no way to recover.
@@ -317,6 +317,14 @@ int8_t Evade::executeFailed(bool initialize)
     msg.status = exploration_status_t::STATUS_FAILED;
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &msg);
+
+    concludeEvasion(false);
     
     return exploration_status_t::STATE_FAILED_EXPLORATION;
+}
+
+// TODO
+void Evade::concludeEvasion(bool victory) 
+{
+    return;
 }

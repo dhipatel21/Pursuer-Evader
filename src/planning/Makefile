@@ -19,8 +19,10 @@ BIN_DIST_TEST  = $(BIN_PATH)/obstacle_distance_grid_test
 BIN_ASTAR_TEST = $(BIN_PATH)/astar_test
 BIN_GRID_GENERATOR = $(BIN_PATH)/grid_generator
 BIN_EXPLORATION = $(BIN_PATH)/exploration
+BIN_PURSUIT = $(BIN_PATH)/pursuit
+BIN_EVADE = $(BIN_PATH)/evade
 
-ALL = $(BIN_DIST_TEST) $(BIN_ASTAR_TEST) $(BIN_GRID_GENERATOR) $(BIN_EXPLORATION) $(LIB_PLANNING)
+ALL = $(BIN_DIST_TEST) $(BIN_ASTAR_TEST) $(BIN_GRID_GENERATOR) $(BIN_EXPLORATION) $(BIN_PURSUIT) $(BIN_EVADE) $(LIB_PLANNING)
 
 all: $(ALL)
 
@@ -41,6 +43,14 @@ $(BIN_GRID_GENERATOR): grid_generator.o $(LIBDEPS)
 	@$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS)
 
 $(BIN_EXPLORATION): exploration.o exploration_main.o $(LIBDEPS) $(LIB_PLANNING)
+	@echo "    $@"
+	@$(CXX) -o $@ $^ $(LIB_PLANNING) $(CXXFLAGS) $(LDFLAGS)
+
+$(BIN_PURSUIT): pursuit.o pursuit_main.o $(LIBDEPS) $(LIB_PLANNING)
+	@echo "    $@"
+	@$(CXX) -o $@ $^ $(LIB_PLANNING) $(CXXFLAGS) $(LDFLAGS)
+
+$(BIN_EVADE): evade.o evade_main.o $(LIBDEPS) $(LIB_PLANNING)
 	@echo "    $@"
 	@$(CXX) -o $@ $^ $(LIB_PLANNING) $(CXXFLAGS) $(LDFLAGS)
 	

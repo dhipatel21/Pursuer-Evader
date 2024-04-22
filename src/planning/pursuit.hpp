@@ -12,6 +12,10 @@
 #include <lcm/lcm-cpp.hpp>
 #include <mutex>
 #include <set>
+#include <chrono>
+
+#define CAPTURE_RADIUS 0.5
+#define TRIAL_TIME 120
 
 /**
 * Exploration runs a simple state machine to explore -- and possibly escape from -- an environment. The state machine
@@ -71,6 +75,8 @@ public:
     void handleMap(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const occupancy_grid_t* map);
     void handlePose(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* pose);
     void handleConfirmation(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const message_received_t* confirm);
+    void handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* request);
+    void handleHeading(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* heading);
 
 private:
     
@@ -100,10 +106,13 @@ private:
     /////////// TODO: Add any state variables you might need here //////////////
     
     pose_xyt_t   currentTarget_;    // Current target robot is driving to
+    pose_xyt_t   evaderInfo_;    // Info about evader: [x y] = distance, [theta] = relative heading
     OccupancyGrid exploredMap_;     // Map found after completing the RETURNING_HOME state
     
     bool pathReceived_;
     int64_t most_recent_path_time;
+
+    std::chrono::_V2::system_clock::time_point start_time;;
 
     /////////////////////////// End student code ///////////////////////////////
     
@@ -117,6 +126,8 @@ private:
     int8_t executePursuit(bool initialize);
     int8_t executeCompleted(bool initialize);
     int8_t executeFailed(bool initialize);
+
+    void concludePursuit(bool victory);
     
     
     /////////////////////////// End student code ///////////////////////////////
