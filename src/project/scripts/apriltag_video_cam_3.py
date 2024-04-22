@@ -6,8 +6,11 @@ import cv2
 import apriltag
 import numpy as np
 import subprocess
+import sys
 
-from lcmtypes import pose_xyt_t
+import lcm
+sys.path.append("../../lcmtypes")
+from pose_xyt_t import pose_xyt_t
 from lcm import LCM
 
 ################################################################################
@@ -124,12 +127,12 @@ def apriltag_video(input_streams=[3], # For default cam use -> [0]
                     distance = calculate_distance(i, poses)
                     # print("Distance to AprilTag ", detection.tag_id, ': ', distance)
                     angle = cam_angles(i, poses)
-                    
+
                     # Message Handling
                     msg = pose_xyt_t()
                     msg.x = distance
                     msg.theta = angle
-                    msg.y = 3
+                    msg.y = 1
 
                     lcm.publish("cam", msg.encode()) # TODO : Handle off command in algo after receiving distance?
 

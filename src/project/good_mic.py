@@ -6,8 +6,10 @@ import hid
 import time
 import sounddevice as sd
 import numpy as np
-from lcmtypes import pose_xyt_t
-from lcm import LCM
+import sys
+import lcm
+sys.path.append("../lcmtypes")
+from pose_xyt_t import pose_xyt_t
 
 # Define constants
 RATE = 48000  # Sampling rate

@@ -6,8 +6,11 @@ import cv2
 import apriltag
 import numpy as np
 import subprocess
+import sys
 
-from lcmtypes import pose_xyt_t
+import lcm
+sys.path.append("../../lcmtypes")
+from pose_xyt_t import pose_xyt_t
 from lcm import LCM
 
 ################################################################################

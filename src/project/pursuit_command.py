@@ -10,9 +10,9 @@ import cv2
 import time
 import numpy as np
 import sys
-sys.path.append("lcmtypes")
 import lcm
-from lcmtypes import mbot_motor_command_t
+sys.path.append("../lcmtypes")
+from mbot_motor_command_t import mbot_motor_command_t
 
 lc = lcm.LCM("udpm://239.255.76.67:7667?ttl=2")
 

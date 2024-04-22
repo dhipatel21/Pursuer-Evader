@@ -6,6 +6,12 @@ import cv2
 import apriltag
 import numpy as np
 import subprocess
+import sys
+
+import lcm
+sys.path.append("../../lcmtypes")
+from pose_xyt_t import pose_xyt_t
+from lcm import LCM
 
 ################################################################################
 threshold = 0.2  # TODO: Adjust based on testing
@@ -47,6 +53,14 @@ def calculate_distance(i, poses):
     distance = np.sqrt(tx**2 + ty**2 + tz**2)
     return distance
 
+def cam_angles(i, poses):
+    tx = poses[i][0][0][3]
+    # ty = poses[i][0][1][3]
+    tz = poses[i][0][2][3]
+
+    angle = np.arctan2(tx, tz)
+    return angle
+
 def apriltag_video(input_streams=[0], # For default cam use -> [0]
                    output_stream=False,
                    display_stream=True,
@@ -71,6 +85,7 @@ def apriltag_video(input_streams=[0], # For default cam use -> [0]
     Either install the DLL in the appropriate system-wide
     location, or specify your own search paths as needed.
     '''
+    lcm = LCM()
 
     detector = apriltag.Detector(options, searchpath=apriltag._get_dll_path())
 
@@ -111,10 +126,20 @@ def apriltag_video(input_streams=[0], # For default cam use -> [0]
                 for i, detection in enumerate(detections):
                     distance = calculate_distance(i, poses)
                     # print("Distance to AprilTag ", detection.tag_id, ': ', distance)
-                    if distance < threshold:
-                        # TODO: send turn off command over LCM
-                        print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
-                        play_wav('3khz.wav')   # replace with actual end condition sound
+                    angle = cam_angles(i, poses)
+
+                    # Message Handling
+                    msg = pose_xyt_t()
+                    msg.x = distance
+                    msg.theta = angle
+                    msg.y = 1
+
+                    lcm.publish("cam", msg.encode()) # TODO : Handle off command in algo after receiving distance?
+
+                    # if distance < threshold:
+                    #     # TODO: send turn off command over LCM
+                    #     print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
+                    #     play_wav('3khz.wav')   # replace with actual end condition sound
 
             if output_stream:
                 output.write(overlay)

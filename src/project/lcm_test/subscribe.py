@@ -1,5 +1,8 @@
+import sys
+import lcm
+sys.path.append("../../lcmtypes")
+from pose_xyt_t import pose_xyt_t
 from lcm import LCM
-from lcmtypes import pose_xyt_t
 
 def handler(channel, data):
     message = pose_xyt_t.decode(data)
