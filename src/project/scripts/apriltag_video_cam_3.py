@@ -7,8 +7,7 @@ import apriltag
 import numpy as np
 import subprocess
 
-import time
-from apriltag_msg import apriltag_msg
+from lcmtypes import pose_xyt_t
 from lcm import LCM
 
 ################################################################################
@@ -125,12 +124,14 @@ def apriltag_video(input_streams=[3], # For default cam use -> [0]
                     distance = calculate_distance(i, poses)
                     # print("Distance to AprilTag ", detection.tag_id, ': ', distance)
                     angle = cam_angles(i, poses)
+                    
                     # Message Handling
-                    msg = apriltag_msg()
-                    msg.timestamp = int(time.time() * 1000000)  # Current timestamp in microseconds
-                    msg.distance = distance
+                    msg = pose_xyt_t()
+                    msg.x = distance
+                    msg.theta = angle
+                    msg.y = 3
 
-                    lcm.publish("april tag", msg.encode()) # TODO : Handle off command in algo after receiving distance?
+                    lcm.publish("cam", msg.encode()) # TODO : Handle off command in algo after receiving distance?
 
                     # if distance < threshold:
                     #     # TODO: send turn off command over LCM
