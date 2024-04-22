@@ -51,6 +51,14 @@ def calculate_distance(i, poses):
     distance = np.sqrt(tx**2 + ty**2 + tz**2)
     return distance
 
+def cam_angles(i, poses):
+    tx = poses[i][0][0][3]
+    # ty = poses[i][0][1][3]
+    tz = poses[i][0][2][3]
+
+    angle = np.arctan2(tx, tz)
+    return angle
+
 def apriltag_video(input_streams=[1], # For default cam use -> [0]
                    output_stream=False,
                    display_stream=True,
@@ -116,7 +124,7 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
                 for i, detection in enumerate(detections):
                     distance = calculate_distance(i, poses)
                     # print("Distance to AprilTag ", detection.tag_id, ': ', distance)
-
+                    angle = cam_angles(i, poses)
                     # Message Handling
                     msg = apriltag_msg()
                     msg.timestamp = int(time.time() * 1000000)  # Current timestamp in microseconds
@@ -124,10 +132,10 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
 
                     lcm.publish("april tag", msg.encode()) # TODO : Handle off command in algo after receiving distance?
 
-                    if distance < threshold:
-                        # TODO: send turn off command over LCM
-                        print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
-                        play_wav('3khz.wav')   # replace with actual end condition sound
+                    # if distance < threshold:
+                    #     # TODO: send turn off command over LCM
+                    #     print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
+                    #     play_wav('3khz.wav')   # replace with actual end condition sound
 
             if output_stream:
                 output.write(overlay)
