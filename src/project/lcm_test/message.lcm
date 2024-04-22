@@ -1,5 +1,0 @@
-struct message {
-    int64_t timestamp;
-    int32_t value;
-    string name;
-}
