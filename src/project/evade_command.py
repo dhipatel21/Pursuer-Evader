@@ -21,7 +21,11 @@ def evasion_handler(channel, data):
     global continue_evasion
     mic_msg = pose_xyt_t.decode(data)
 
-    if mic_msg.x > THRESHOLD:
+    # TODO: do something with next_waypoint_pursuer
+    # TODO: move this to a different location, tie it to time
+    next_waypoint_evader = evasion_agent.update_evader_CW()
+
+    if mic_msg.x >= THRESHOLD:
         msg = pose_xyt_t()
         msg.x = 1
         msg.y = 1
