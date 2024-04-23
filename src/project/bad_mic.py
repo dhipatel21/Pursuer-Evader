@@ -1,11 +1,9 @@
 import sounddevice as sd
 import numpy as np
-
 import time
 import sys
 from lcm import LCM
-sys.path.append("../lcmtypes")
-from pose_xyt_t import pose_xyt_t
+from lcmtypes import mbot_motor_command_t, pose_xyt_t
 
 # Define constants
 RATE = 44100  # Sampling rate
