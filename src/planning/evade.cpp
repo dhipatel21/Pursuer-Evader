@@ -116,7 +116,7 @@ void Evade::handleShutdown(const lcm::ReceiveBuffer* rbuf, const std::string& ch
     std::lock_guard<std::mutex> autoLock(dataLock_);
     while(1) {
         std::cout << "SHUTDOWN MESSAGE RECEIVED, SHUTTING DOWN NOW" << std::endl;
-        concludeEvasion(false);
+        executeFailed(true);
     }
 }
 
@@ -302,7 +302,7 @@ int8_t Evade::executeCompleted(bool initialize)
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &msg);
 
-    concludeEvasion(true);
+    // TODO end behavior
     
     return exploration_status_t::STATE_COMPLETED_EXPLORATION;
 }
@@ -318,13 +318,7 @@ int8_t Evade::executeFailed(bool initialize)
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &msg);
 
-    concludeEvasion(false);
+    // TODO end behavior
     
     return exploration_status_t::STATE_FAILED_EXPLORATION;
-}
-
-// TODO
-void Evade::concludeEvasion(bool victory) 
-{
-    return;
 }

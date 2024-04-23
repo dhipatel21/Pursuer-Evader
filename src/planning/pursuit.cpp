@@ -322,7 +322,8 @@ int8_t Pursuit::executeCompleted(bool initialize)
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &msg);
 
-    concludePursuit(true);
+    // TODO end behavior
+    // concludePursuit(true);
     
     return exploration_status_t::STATE_COMPLETED_EXPLORATION;
 }
@@ -338,13 +339,8 @@ int8_t Pursuit::executeFailed(bool initialize)
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &msg);
 
-    concludePursuit(false);
+    // TODO end behavior
+    // concludePursuit(false);
     
     return exploration_status_t::STATE_FAILED_EXPLORATION;
-}
-
-// TODO
-void Pursuit::concludePursuit(bool victory) 
-{
-    return;
 }

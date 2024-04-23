@@ -125,8 +125,6 @@ private:
     int8_t executeEvade(bool initialize);
     int8_t executeCompleted(bool initialize);
     int8_t executeFailed(bool initialize);
-
-    void concludeEvasion(bool victory);
     
     
     /////////////////////////// End student code ///////////////////////////////
