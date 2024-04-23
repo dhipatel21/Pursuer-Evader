@@ -110,7 +110,7 @@ void Evade::handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& cha
     currentTarget_.y = request->y;
 }
 
-// TODO
+// 
 void Evade::handleShutdown(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const exploration_status_t* request)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);

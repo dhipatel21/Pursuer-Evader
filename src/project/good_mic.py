@@ -42,7 +42,7 @@ def audio_callback(indata, frames, time, status):
             msg = pose_xyt_t()
             msg.theta = a[3]*255+a[4]
 
-            lcm.publish("good mic", msg.encode())
+            lcm.publish("GOOD_MICROPHONE_CHANNEL", msg.encode())
 
             print(f" Sound detected at frequency: {dominant_frequency:.2f} Hz")
 

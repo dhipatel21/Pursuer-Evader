@@ -43,7 +43,7 @@ upper_bounds : Vector2D = Vector2D(10, 10)
 evasion_agent = Evasion(evader_initial_position, evader_speed, upper_bounds, lower_bounds)
 
 # Begin
-subscription_mic = lc.subscribe("MICROPHONE_CHANNEL", evasion_handler)
+subscription_mic = lc.subscribe("BAD_MICROPHONE_CHANNEL", evasion_handler)
 
 try:
     while continue_evasion:

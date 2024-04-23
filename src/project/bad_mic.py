@@ -24,7 +24,7 @@ def audio_callback(indata, frames, time, status):
     msg = pose_xyt_t()
     msg.x = dominant_frequency
 
-    lcm.publish("bad mic", msg.encode())
+    lcm.publish("BAD_MICROPHONE_CHANNEL", msg.encode())
     
     if dominant_frequency >= THRESHOLD_FREQUENCY:
         sd.stop()

@@ -66,6 +66,16 @@ def camera_3_handler(channel, data):
         # TODO publish shutdown sequence
         continue_pursuit = False
         lc.unsubscribe(subscription_cam_3)
+
+def good_mic_handler(channel, data):
+    global continue_pursuit
+    mic_msg = pose_xyt_t.decode(data)
+
+    evader_direction = mic_msg.theta # TODO : 3 Camera logic
+
+    # TODO: do something with next_waypoint_pursuer
+    # TODO: move this to a different location, tie it to time
+    next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
     
 
 # Initialize the simulation environment
@@ -83,6 +93,7 @@ pursuit_agent = Pursuit(pursuer_initial_position, pursuer_speed, evader_initial_
 subscription_cam_1 = lc.subscribe("CAMERA_1_CHANNEL", camera_1_handler)
 subscription_cam_2 = lc.subscribe("CAMERA_2_CHANNEL", camera_2_handler)
 subscription_cam_3 = lc.subscribe("CAMERA_3_CHANNEL", camera_3_handler)
+subscription_good_mic = lc.subscribe("GOOD_MICROPHONE_CHANNEL", good_mic_handler)
 
 try:
     while continue_pursuit:
