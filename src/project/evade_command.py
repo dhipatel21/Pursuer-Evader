@@ -21,10 +21,6 @@ def evasion_handler(channel, data):
     global continue_evasion
     mic_msg = pose_xyt_t.decode(data)
 
-    # TODO: do something with next_waypoint_pursuer
-    # TODO: move this to a different location, tie it to time
-    next_waypoint_evader = evasion_agent.update_evader_CW()
-
     if mic_msg.x >= THRESHOLD:
         msg = pose_xyt_t()
         msg.x = 1
@@ -32,7 +28,7 @@ def evasion_handler(channel, data):
         msg.theta = 1
         msg.utime = 1
 
-        lc.publish("SHUTDOWN_CHANNEL", msg.encode())
+        lc.publish("PE_SHUTDOWN", msg.encode())
         continue_evasion = False
         lc.unsubscribe(subscription_mic)
     
@@ -55,6 +51,12 @@ try:
     while continue_evasion:
         lc.handle()
         next_waypoint_evader = evasion_agent.update_evader_CW()
-        # TODO publish this
+        msg = pose_xyt_t()
+        msg.x = next_waypoint_evader.x
+        msg.y = next_waypoint_evader.y
+        msg.theta = 0
+        msg.utime = 0
+
+        lc.publish("PE_WAYPOINT", msg.encode())
 except KeyboardInterrupt:
     pass

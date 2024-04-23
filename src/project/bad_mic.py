@@ -34,7 +34,7 @@ def audio_callback(indata, frames, time, status):
         msg.theta = 1
         msg.utime = 1
 
-        lcm.publish("SHUTDOWN_CHANNEL", msg.encode())
+        lcm.publish("PE_SHUTDOWN", msg.encode())
 
 # Main function
 def main():

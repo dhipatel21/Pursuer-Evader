@@ -90,7 +90,7 @@ def camera_1_handler(channel, data):
         msg.theta = 1
         msg.utime = 1
 
-        lc.publish("SHUTDOWN_CHANNEL", msg.encode())
+        lc.publish("PE_SHUTDOWN", msg.encode())
         play_wav("3khz.wav")
         continue_pursuit = False
         lc.unsubscribe(subscription_cam_1)
@@ -111,7 +111,7 @@ def camera_2_handler(channel, data):
         msg.theta = 1
         msg.utime = 1
 
-        lc.publish("SHUTDOWN_CHANNEL", msg.encode())
+        lc.publish("PE_SHUTDOWN", msg.encode())
         continue_pursuit = False
         play_wav("3khz.wav")
         lc.unsubscribe(subscription_cam_2)
@@ -132,7 +132,7 @@ def camera_3_handler(channel, data):
         msg.theta = 1
         msg.utime = 1
 
-        lc.publish("SHUTDOWN_CHANNEL", msg.encode())
+        lc.publish("PE_SHUTDOWN", msg.encode())
         play_wav("3khz.wav")
         continue_pursuit = False
         lc.unsubscribe(subscription_cam_3)
@@ -166,6 +166,12 @@ try:
     while continue_pursuit:
         lc.handle()
         next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
-        # TODO publish this
+        msg = pose_xyt_t()
+        msg.x = next_waypoint_pursuer.x
+        msg.y = next_waypoint_pursuer.y
+        msg.theta = 0
+        msg.utime = 0
+
+        lc.publish("PE_WAYPOINT", msg.encode())
 except KeyboardInterrupt:
     pass
