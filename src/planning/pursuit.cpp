@@ -37,7 +37,7 @@ Pursuit::Pursuit(int32_t teamNumber,
     lcmInstance_->subscribe(SLAM_POSE_CHANNEL, &Pursuit::handlePose, this);
     lcmInstance_->subscribe(MESSAGE_CONFIRMATION_CHANNEL, &Pursuit::handleConfirmation, this);
     lcmInstance_->subscribe(PE_REQUEST_CHANNEL, &Pursuit::handleRequest, this);
-    lcmInstance_->subscribe(PE_HEADING_CHANNEL, &Pursuit::handleHeading, this);
+    lcmInstance_->subscribe(GOOD_MICROPHONE_CHANNEL, &Pursuit::handleGoodMicrophone, this);
     
     // Send an initial message indicating that the exploration module is initializing. Once the first map and pose are
     // received, then it will change to the exploring map state.
@@ -110,13 +110,11 @@ void Pursuit::handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& c
     currentTarget_.y = request->y;
 }
 
-void Pursuit::handleHeading(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* heading)
+void Pursuit::handleGoodMicrophone(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* mic_info)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);
-    evaderInfo_.theta = heading->theta;
-    evaderInfo_.utime = heading->utime;
-    evaderInfo_.x = heading->x;
-    evaderInfo_.y = heading->y;
+    evaderInfo_.theta = mic_info->theta;
+    evaderInfo_.utime = mic_info->utime;
 }
 
 void Pursuit::handleCamera(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* camera_info)
@@ -125,7 +123,6 @@ void Pursuit::handleCamera(const lcm::ReceiveBuffer* rbuf, const std::string& ch
     evaderInfo_.theta = camera_info->theta;
     evaderInfo_.utime = camera_info->utime;
     evaderInfo_.x = camera_info->x;
-    evaderInfo_.y = camera_info->y;
 }
 
 bool Pursuit::isReadyToUpdate(void)

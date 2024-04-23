@@ -76,7 +76,7 @@ public:
     void handlePose(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* pose);
     void handleConfirmation(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const message_received_t* confirm);
     void handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* request);
-    void handleHeading(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* heading);
+    void handleGoodMicrophone(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* mic_info);
     void handleCamera(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* camera_info);
 
 private:
