@@ -10,23 +10,25 @@ import cv2
 import time
 import numpy as np
 import sys
-import lcm
+from lcm import LCM
 from lcmtypes import mbot_motor_command_t, pose_xyt_t
 
 THRESHOLD = 3000
 
-lc = lcm.LCM("udpm://239.255.76.67:7667?ttl=2")
+lc = LCM("udpm://239.255.76.67:7667?ttl=2")
 
 def evasion_handler(channel, data):
     global continue_evasion
     mic_msg = pose_xyt_t.decode(data)
 
-    # TODO: do something with next_waypoint_pursuer
-    # TODO: move this to a different location, tie it to time
-    next_waypoint_evader = evasion_agent.update_evader_CW()
-
     if mic_msg.x > THRESHOLD:
-        # TODO publish shutdown sequence
+        msg = pose_xyt_t()
+        msg.x = 1
+        msg.y = 1
+        msg.theta = 1
+        msg.utime = 1
+
+        lc.publish("SHUTDOWN_CHANNEL", msg.encode())
         continue_evasion = False
         lc.unsubscribe(subscription_mic)
     
@@ -48,5 +50,7 @@ subscription_mic = lc.subscribe("BAD_MICROPHONE_CHANNEL", evasion_handler)
 try:
     while continue_evasion:
         lc.handle()
+        next_waypoint_evader = evasion_agent.update_evader_CW()
+        # TODO publish this
 except KeyboardInterrupt:
     pass

@@ -10,72 +10,78 @@ import cv2
 import time
 import numpy as np
 import sys
-import lcm
+from lcm import LCM
 from lcmtypes import mbot_motor_command_t, pose_xyt_t
 
 THRESHOLD = 0.001
 
-lc = lcm.LCM("udpm://239.255.76.67:7667?ttl=2")
+lc = LCM("udpm://239.255.76.67:7667?ttl=2")
 
 def camera_1_handler(channel, data):
     global continue_pursuit
+    global evader_direction
     cam_msg = pose_xyt_t.decode(data)
 
-    evader_direction = cam_msg.theta # TODO : 3 Camera logic
+    evader_direction = cam_msg.theta
     evader_distance = cam_msg.x
 
-    # TODO: do something with next_waypoint_pursuer
-    # TODO: move this to a different location, tie it to time
-    next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
-
     if evader_distance < THRESHOLD:
-        # TODO publish shutdown sequence
+        msg = pose_xyt_t()
+        msg.x = 1
+        msg.y = 1
+        msg.theta = 1
+        msg.utime = 1
+
+        lc.publish("SHUTDOWN_CHANNEL", msg.encode())
         continue_pursuit = False
         lc.unsubscribe(subscription_cam_1)
     
 
 def camera_2_handler(channel, data):
     global continue_pursuit
+    global evader_direction
     cam_msg = pose_xyt_t.decode(data)
 
-    evader_direction = cam_msg.theta # TODO : 3 Camera logic
+    evader_direction = cam_msg.theta
     evader_distance = cam_msg.x
 
-    # TODO: do something with next_waypoint_pursuer
-    # TODO: move this to a different location, tie it to time
-    next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
-
     if evader_distance < THRESHOLD:
-        # TODO publish shutdown sequence
+        msg = pose_xyt_t()
+        msg.x = 1
+        msg.y = 1
+        msg.theta = 1
+        msg.utime = 1
+
+        lc.publish("SHUTDOWN_CHANNEL", msg.encode())
         continue_pursuit = False
         lc.unsubscribe(subscription_cam_2)
     
 
 def camera_3_handler(channel, data):
     global continue_pursuit
+    global evader_direction
     cam_msg = pose_xyt_t.decode(data)
 
-    evader_direction = cam_msg.theta # TODO : 3 Camera logic
+    evader_direction = cam_msg.theta
     evader_distance = cam_msg.x
 
-    # TODO: do something with next_waypoint_pursuer
-    # TODO: move this to a different location, tie it to time
-    next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
-
     if evader_distance < THRESHOLD:
-        # TODO publish shutdown sequence
+        msg = pose_xyt_t()
+        msg.x = 1
+        msg.y = 1
+        msg.theta = 1
+        msg.utime = 1
+
+        lc.publish("SHUTDOWN_CHANNEL", msg.encode())
         continue_pursuit = False
         lc.unsubscribe(subscription_cam_3)
 
 def good_mic_handler(channel, data):
     global continue_pursuit
+    global evader_direction
     mic_msg = pose_xyt_t.decode(data)
 
-    evader_direction = mic_msg.theta # TODO : 3 Camera logic
-
-    # TODO: do something with next_waypoint_pursuer
-    # TODO: move this to a different location, tie it to time
-    next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
+    evader_direction = mic_msg.theta
     
 
 # Initialize the simulation environment
@@ -98,10 +104,7 @@ subscription_good_mic = lc.subscribe("GOOD_MICROPHONE_CHANNEL", good_mic_handler
 try:
     while continue_pursuit:
         lc.handle()
+        next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
+        # TODO publish this
 except KeyboardInterrupt:
     pass
-
-# While (! shut down sequence):
-#   receieve lcm evader direction
-#   get pursuit waypoint (evader direction)
-#   publish pursuit waypoint to c++

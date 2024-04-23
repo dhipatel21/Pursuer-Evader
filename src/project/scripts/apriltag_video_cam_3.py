@@ -139,10 +139,16 @@ def apriltag_video(input_streams=[3], # For default cam use -> [0]
 
                     lcm.publish("CAMERA_3_CHANNEL", msg.encode()) # TODO : Handle off command in algo after receiving distance?
 
-                    # if distance < threshold:
-                    #     # TODO: send turn off command over LCM
-                    #     print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
-                    #     play_wav('3khz.wav')   # replace with actual end condition sound
+                    if distance < threshold:
+                        msg = pose_xyt_t()
+                        msg.x = 1
+                        msg.y = 1
+                        msg.theta = 1
+                        msg.utime = 1
+
+                        lcm.publish("SHUTDOWN_CHANNEL", msg.encode())
+                        print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
+                        play_wav('3khz.wav')   # replace with actual end condition sound
 
                 time.wait(3)
 

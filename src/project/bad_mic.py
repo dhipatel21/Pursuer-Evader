@@ -28,7 +28,13 @@ def audio_callback(indata, frames, time, status):
     
     if dominant_frequency >= THRESHOLD_FREQUENCY:
         sd.stop()
-        # TODO and other shutdown messages
+        msg = pose_xyt_t()
+        msg.x = 1
+        msg.y = 1
+        msg.theta = 1
+        msg.utime = 1
+
+        lcm.publish("SHUTDOWN_CHANNEL", msg.encode())
 
 # Main function
 def main():
