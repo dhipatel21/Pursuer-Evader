@@ -119,6 +119,15 @@ void Pursuit::handleHeading(const lcm::ReceiveBuffer* rbuf, const std::string& c
     evaderInfo_.y = heading->y;
 }
 
+void Pursuit::handleCamera(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* camera_info)
+{
+    std::lock_guard<std::mutex> autoLock(dataLock_);
+    evaderInfo_.theta = camera_info->theta;
+    evaderInfo_.utime = camera_info->utime;
+    evaderInfo_.x = camera_info->x;
+    evaderInfo_.y = camera_info->y;
+}
+
 bool Pursuit::isReadyToUpdate(void)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);

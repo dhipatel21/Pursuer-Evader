@@ -7,7 +7,7 @@ import time
 import sounddevice as sd
 import numpy as np
 import sys
-import lcm
+from lcm import LCM
 from lcmtypes import mbot_motor_command_t, pose_xyt_t
 
 # Define constants

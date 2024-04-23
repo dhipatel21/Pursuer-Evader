@@ -11,8 +11,7 @@ import sys
 import time
 
 import lcm
-sys.path.append("../../lcmtypes")
-from pose_xyt_t import pose_xyt_t
+from lcmtypes import mbot_motor_command_t, pose_xyt_t
 from lcm import LCM
 
 ################################################################################
@@ -134,9 +133,11 @@ def apriltag_video(input_streams=[3], # For default cam use -> [0]
                     msg = pose_xyt_t()
                     msg.x = distance
                     msg.theta = angle
-                    msg.y = 1
+                    msg.y = 3
 
-                    lcm.publish("cam", msg.encode()) # TODO : Handle off command in algo after receiving distance?
+                    # TODO: camera angle adjustments based on ground heading of camera
+
+                    lcm.publish("CAMERA_3_CHANNEL", msg.encode()) # TODO : Handle off command in algo after receiving distance?
 
                     # if distance < threshold:
                     #     # TODO: send turn off command over LCM

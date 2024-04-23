@@ -8,7 +8,8 @@ import numpy as np
 import subprocess
 
 import time
-from apriltag_msg import apriltag_msg
+from botlab.src.project.lcmtypes.apriltag_msg import apriltag_msg
+from lcmtypes import mbot_motor_command_t, pose_xyt_t
 from lcm import LCM
 
 ################################################################################

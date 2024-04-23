@@ -21,14 +21,15 @@ def evasion_handler(channel, data):
     global continue_evasion
     mic_msg = pose_xyt_t.decode(data)
 
+    # TODO: do something with next_waypoint_pursuer
+    # TODO: move this to a different location, tie it to time
     next_waypoint_evader = evasion_agent.update_evader_CW()
 
     if mic_msg.x > THRESHOLD:
-        # publish shutdown sequence to driver
+        # TODO publish shutdown sequence
         continue_evasion = False
-        lc.unsubscribe(subscription_1)
+        lc.unsubscribe(subscription_mic)
     
-    # publish waypoint to driver
 
 # Initialize the simulation environment
 pursuer_initial_position = Vector2D(0, 0)
@@ -41,10 +42,8 @@ upper_bounds : Vector2D = Vector2D(10, 10)
 
 evasion_agent = Evasion(evader_initial_position, evader_speed, upper_bounds, lower_bounds)
 
-# pursuit_agent = Pursuit(pursuer_initial_position, pursuer_speed, evader_initial_position, evader_speed, upper_bounds, lower_bounds)
-
 # Begin
-subscription_1 = lc.subscribe("MICROPHONE_CHANNEL", evasion_handler)
+subscription_mic = lc.subscribe("MICROPHONE_CHANNEL", evasion_handler)
 
 try:
     while continue_evasion:

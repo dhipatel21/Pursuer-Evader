@@ -9,8 +9,7 @@ import subprocess
 import sys
 
 import lcm
-sys.path.append("../../lcmtypes")
-from pose_xyt_t import pose_xyt_t
+from lcmtypes import mbot_motor_command_t, pose_xyt_t
 from lcm import LCM
 
 ################################################################################

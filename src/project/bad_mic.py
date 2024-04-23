@@ -28,6 +28,7 @@ def audio_callback(indata, frames, time, status):
     
     if dominant_frequency >= THRESHOLD_FREQUENCY:
         sd.stop()
+        # TODO and other shutdown messages
 
 # Main function
 def main():
