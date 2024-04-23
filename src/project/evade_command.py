@@ -25,8 +25,13 @@ def evasion_handler(channel, data):
     # TODO: move this to a different location, tie it to time
     next_waypoint_evader = evasion_agent.update_evader_CW()
 
-    if mic_msg.x > THRESHOLD:
+    if mic_msg.x >= THRESHOLD:
         # TODO publish shutdown sequence
+        msg = pose_xyt_t()
+        msg.x = 1
+        msg.theta = 1
+        msg.y = 1
+        lc.publish("PE_SHUTDOWN", msg.encode())
         continue_evasion = False
         lc.unsubscribe(subscription_mic)
     

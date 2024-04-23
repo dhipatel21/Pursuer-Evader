@@ -17,6 +17,35 @@ THRESHOLD = 0.001
 
 lc = lcm.LCM("udpm://239.255.76.67:7667?ttl=2")
 
+import wave
+import pyaudio
+
+def play_wav(file_path):
+    # Open the WAV file
+    wf = wave.open(file_path, 'rb')
+
+    # Initialize PyAudio
+    p = pyaudio.PyAudio()
+
+    # Open a stream for playback
+    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                    channels=wf.getnchannels(),
+                    rate=wf.getframerate(),
+                    output=True)
+
+    # Read data from the WAV file and play it
+    data = wf.readframes(1024)
+    while data:
+        stream.write(data)
+        data = wf.readframes(1024)
+
+    # Stop and close the stream
+    stream.stop_stream()
+    stream.close()
+
+    # Terminate PyAudio
+    p.terminate()
+
 def camera_1_handler(channel, data):
     global continue_pursuit
     cam_msg = pose_xyt_t.decode(data)
@@ -30,6 +59,7 @@ def camera_1_handler(channel, data):
 
     if evader_distance < THRESHOLD:
         # TODO publish shutdown sequence
+        play_wav("3khz.wav")
         continue_pursuit = False
         lc.unsubscribe(subscription_cam_1)
     
@@ -48,6 +78,7 @@ def camera_2_handler(channel, data):
     if evader_distance < THRESHOLD:
         # TODO publish shutdown sequence
         continue_pursuit = False
+        play_wav("3khz.wav")
         lc.unsubscribe(subscription_cam_2)
     
 
@@ -64,6 +95,7 @@ def camera_3_handler(channel, data):
 
     if evader_distance < THRESHOLD:
         # TODO publish shutdown sequence
+        play_wav("3khz.wav")
         continue_pursuit = False
         lc.unsubscribe(subscription_cam_3)
 
