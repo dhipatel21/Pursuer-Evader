@@ -7,6 +7,7 @@ import apriltag
 import numpy as np
 import subprocess
 import sys
+import time
 
 import lcm
 sys.path.append("../../lcmtypes")
@@ -140,6 +141,8 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
                     #     # TODO: send turn off command over LCM
                     #     print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
                     #     play_wav('3khz.wav')   # replace with actual end condition sound
+
+                time.wait(3)
 
             if output_stream:
                 output.write(overlay)

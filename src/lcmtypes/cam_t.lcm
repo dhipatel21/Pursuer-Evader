@@ -1,0 +1,7 @@
+
+struct cam_t {
+    int32_t distance;
+    int32_t tx;
+    int32_t tz;
+    int32_t cam_num;
+}

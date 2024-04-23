@@ -3,7 +3,7 @@ import lcm
 sys.path.append("../../lcmtypes")
 from pose_xyt_t import pose_xyt_t
 from lcm import LCM
-from cam_t import cam_t
+from lcmtypes import pose_xyt_t
 
 def handler(channel, data):
     message = cam_t.decode(data)

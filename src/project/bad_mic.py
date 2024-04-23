@@ -3,7 +3,7 @@ import numpy as np
 
 import time
 import sys
-import lcm
+from lcm import LCM
 sys.path.append("../lcmtypes")
 from pose_xyt_t import pose_xyt_t
 
@@ -20,17 +20,16 @@ def audio_callback(indata, frames, time, status):
 
     # Find the dominant frequency
     dominant_frequency = frequencies[np.argmax(np.abs(fft_data))]
+
+    # Message Handling
+    lcm = LCM()
+    msg = pose_xyt_t()
+    msg.x = dominant_frequency
+
+    lcm.publish("bad mic", msg.encode())
     
     if dominant_frequency >= THRESHOLD_FREQUENCY:
         sd.stop()
-        print(f"Sound detected at frequency: {dominant_frequency:.2f} Hz")
-
-        # Message Handling
-        lcm = LCM()
-        msg = pose_xyt_t()
-        msg.x = dominant_frequency
-
-        lcm.publish("bad mic", msg.encode())
 
 # Main function
 def main():
