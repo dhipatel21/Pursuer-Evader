@@ -250,6 +250,57 @@ int8_t Evade::executeEvade(bool initialize)
 {
     planner_.setMap(currentMap_); // update map from SLAM
 
+    float goalDist = 0;
+    if (currentPath_.path_length > 1) {
+        goalDist = distance_between_points(Point<float>(currentPose_.x, currentPose_.y), Point<float>(currentPath_.path.back().x, currentPath_.path.back().y));
+    }
+    else {
+        goalDist = std::numeric_limits<float>::max();
+    }
+
+    if ((initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1))
+    {
+        if(currentMap_.isCellInGrid(currentTarget_.x, currentTarget_.y) // cell is in the grid
+            && currentMap_.logOdds(currentTarget_.x, currentTarget_.y) < 0  // cell is unoccupied by an obstacle
+            && planner_.isValidGoal(currentTarget_))            // planned pose is within acceptable radius of obstacle
+        {
+            std::cout << currentTarget_.x << " " << currentTarget_.y << "\n";
+            currentPath_ = planner_.planPath(currentPose_, currentTarget_);
+        }
+        else {
+            // otherwise centroid is not suitable, so radial search to find suitable cells on frontier
+            pose_xyt_t newPose (currentPose_);
+            float radius = 0.02;
+            while (radius < 1){
+                std::cout << "radius: " << radius << "\n";
+                for (float angle = 0; angle < 2*M_PI; angle += (M_PI / 8.0)){
+
+                    float dx = radius * cos(angle);
+                    float dy = radius * sin(angle);
+                    std::cout << dx << " " << dy << "\n";
+                    Point<double> coordinate (currentTarget_.x + dx, currentTarget_.y + dy);
+                    cell_t cell = global_position_to_grid_cell(coordinate, currentMap_);
+                    
+                    newPose.x = coordinate.x;
+                    newPose.y = coordinate.y;
+                    
+                    std::cout << newPose.x << " " << newPose.y << "\n";
+                    robot_path_t plannedPath;
+
+                    if(currentMap_.isCellInGrid(cell.x, cell.y)             // cell is in the grid
+                        && planner_.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
+                        {
+                            plannedPath = planner_.planPath(currentPose_, newPose);
+                            if (planner_.isPathSafe(plannedPath)){   // is path still safe
+                                currentPath_ = plannedPath;
+                            }
+                        }
+                }
+                radius += 0.02;
+            }
+        }
+    }
+
     /////////////////////////////// End student code ///////////////////////////////
 
     /////////////////////////   Create the status message    //////////////////////////

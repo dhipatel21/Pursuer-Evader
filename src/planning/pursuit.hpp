@@ -78,6 +78,7 @@ public:
     void handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* request);
     void handleGoodMicrophone(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* mic_info);
     void handleCamera(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* camera_info);
+    void handleTurnToSource(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* turn_signal);
 
 private:
     
@@ -111,7 +112,9 @@ private:
     bool pathReceived_;
     int64_t most_recent_path_time;
 
-    std::chrono::_V2::system_clock::time_point start_time;;
+    std::chrono::_V2::system_clock::time_point start_time;
+
+    bool keep_turning;
 
     /////////////////////////// End student code ///////////////////////////////
     

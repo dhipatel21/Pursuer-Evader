@@ -131,6 +131,8 @@ def apriltag_video(input_streams=[3], # For default cam use -> [0]
 
                     # Message Handling
                     msg = pose_xyt_t()
+
+                    msg.utime = int(time.time())
                     msg.x = distance
                     msg.theta = angle
                     msg.y = 3
