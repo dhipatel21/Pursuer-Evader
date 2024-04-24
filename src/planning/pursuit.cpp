@@ -71,17 +71,17 @@ bool Pursuit::pursue()
     while((state_ != exploration_status_t::STATE_COMPLETED_EXPLORATION) 
         && (state_ != exploration_status_t::STATE_FAILED_EXPLORATION))
     {
-        std::cout << "INFO: Continue pursuit" << std::endl;
+        // std::cout << "INFO: Continue pursuit" << std::endl;
         // If data is ready, then run an update of the exploration routine
         if(isReadyToUpdate())
         {
-            std::cout << "INFO: Ready to update" << std::endl;
+            // std::cout << "INFO: Ready to update" << std::endl;
             runPursuit();
         }
         // Otherwise wait a bit for data to arrive
         else
         {
-            std::cout << "INFO: Not ready to update, sleeping" << std::endl;
+            // std::cout << "INFO: Not ready to update, sleeping" << std::endl;
             usleep(10000);
         }
     }
@@ -222,7 +222,7 @@ void Pursuit::executeStateMachine(void)
     } while(stateChanged);
 
     //if path confirmation was not received, resend path
-    if(!pathReceived_)
+    if(!pathReceived_ && (currentTarget_.utime != 0))
     {
         std::cout << "INFO: Pursuit: The current path was not received by motion_controller, attempting to send again:\n";
 
@@ -284,13 +284,15 @@ int8_t Pursuit::executePursuit(bool initialize)
         goalDist = std::numeric_limits<float>::max();
     }
 
-    if (!keep_turning) {
+    if (!keep_turning && (currentTarget_.utime != 0)) {
+        std::cout << "INFO: Begin planning consideration" << std::endl;
         if ((initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1))
         {
             if(currentMap_.isCellInGrid(currentTarget_.x, currentTarget_.y) // cell is in the grid
                 && currentMap_.logOdds(currentTarget_.x, currentTarget_.y) < 0  // cell is unoccupied by an obstacle
                 && planner_.isValidGoal(currentTarget_))            // planned pose is within acceptable radius of obstacle
             {
+                std::cout << "INFO: Valid goal found, begin planing" << std::endl;
                 std::cout << currentTarget_.x << " " << currentTarget_.y << "\n";
                 currentPath_ = planner_.planPath(currentPose_, currentTarget_);
             }
@@ -317,6 +319,7 @@ int8_t Pursuit::executePursuit(bool initialize)
                         if(currentMap_.isCellInGrid(cell.x, cell.y)             // cell is in the grid
                             && planner_.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
                             {
+                                std::cout << "INFO: Valid RADIAL goal found, begin planing" << std::endl;
                                 plannedPath = planner_.planPath(currentPose_, newPose);
                                 if (planner_.isPathSafe(plannedPath)){   // is path still safe
                                     currentPath_ = plannedPath;
@@ -328,13 +331,16 @@ int8_t Pursuit::executePursuit(bool initialize)
             }
         }
     }
-    else {
+    else if ((currentTarget_.utime != 0)) {
         mbot_motor_command_t turn;
         turn.angular_v = 0.5;
         turn.utime = 0;
         turn.trans_v = 0;
         
         lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &turn);
+    }
+    else {
+        std::cout << "WARNING: No target information has been received." << std::endl;
     }
     /////////////////////////////// End student code ///////////////////////////////
 
