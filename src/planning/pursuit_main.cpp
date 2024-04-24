@@ -36,11 +36,12 @@ int main(int argc, char** argv)
 
     // Launch the exploration thread
 
+    std::cout << "INFO: Main: Launching pursuit thread" << std::endl;
     std::thread pursuitThread([&pursuit, &pursuitComplete]() {
         bool success = pursuit.pursue();
         pursuitComplete = true;
 
-        std::cout << "Pursuit thread complete: " << (success ? "SUCCESS!" : "FAILED!") << '\n';
+        std::cout << "INFO: Main: Pursuit thread complete: " << (success ? "SUCCESS!" : "FAILED!") << '\n';
     });
 
     // Handle LCM messages until exploration is finished
@@ -52,7 +53,7 @@ int main(int argc, char** argv)
     // Cleanup the remaining resources
     pursuitThread.join();
 
-    std::cout << "Joined explore thread. Exiting\n";
+    std::cout << "INFO: Joined explore thread. Exiting\n";
 
     return 0;
 }

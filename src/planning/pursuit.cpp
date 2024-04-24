@@ -50,6 +50,10 @@ Pursuit::Pursuit(int32_t teamNumber,
     status.team_number = teamNumber_;
     status.state = exploration_status_t::STATE_INITIALIZING;
     status.status = exploration_status_t::STATUS_IN_PROGRESS;
+    currentTarget_.x = 0;
+    currentTarget_.y = 0;
+    currentTarget_.theta = 0;
+    currentTarget_.utime = 0;
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
     
@@ -63,17 +67,21 @@ Pursuit::Pursuit(int32_t teamNumber,
 
 bool Pursuit::pursue()
 {
+    std::cout << "INFO: Pursue" << std::endl;
     while((state_ != exploration_status_t::STATE_COMPLETED_EXPLORATION) 
         && (state_ != exploration_status_t::STATE_FAILED_EXPLORATION))
     {
+        // std::cout << "INFO: Continue pursuit" << std::endl;
         // If data is ready, then run an update of the exploration routine
         if(isReadyToUpdate())
         {
+            // std::cout << "INFO: Ready to update" << std::endl;
             runPursuit();
         }
         // Otherwise wait a bit for data to arrive
         else
         {
+            // std::cout << "INFO: Not ready to update, sleeping" << std::endl;
             usleep(10000);
         }
     }
@@ -146,6 +154,7 @@ bool Pursuit::isReadyToUpdate(void)
 
 void Pursuit::runPursuit(void)
 {
+    std::cout << "INFO: Run pursuit" << std::endl;
     assert(isReadyToUpdate());
     
     copyDataForUpdate();
@@ -180,6 +189,7 @@ void Pursuit::copyDataForUpdate(void)
 
 void Pursuit::executeStateMachine(void)
 {
+    std::cout << "INFO: Execute state machine" << std::endl;
     bool stateChanged = false;
     int8_t nextState = state_;
     
@@ -214,9 +224,9 @@ void Pursuit::executeStateMachine(void)
     } while(stateChanged);
 
     //if path confirmation was not received, resend path
-    if(!pathReceived_)
+    if(!pathReceived_ && (currentTarget_.utime != 0))
     {
-        std::cout << "the current path was not received by motion_controller, attempting to send again:\n";
+        std::cout << "INFO: Pursuit: The current path was not received by motion_controller, attempting to send again:\n";
 
         std::cout << "timestamp: " << currentPath_.utime << "\n";
 
@@ -251,6 +261,7 @@ int8_t Pursuit::executeInitializing(void)
 {
     /////////////////////////   Create the status message    //////////////////////////
     // Immediately transition to pursuing once the first bit of data has arrived
+    std::cout << "INFO: Execute initializing" << std::endl;
     exploration_status_t status;
     status.utime = utime_now();
     status.team_number = teamNumber_;
@@ -262,9 +273,9 @@ int8_t Pursuit::executeInitializing(void)
     return exploration_status_t::STATE_EXPLORING_MAP;
 }
 
-// TODO
 int8_t Pursuit::executePursuit(bool initialize)
 {    
+    std::cout << "INFO: Execute pursuit" << std::endl;
     planner_.setMap(currentMap_); // update map from SLAM
 
     float goalDist = 0;
@@ -275,55 +286,63 @@ int8_t Pursuit::executePursuit(bool initialize)
         goalDist = std::numeric_limits<float>::max();
     }
 
-    if (!keep_turning && (initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1))
-    {
-        if(currentMap_.isCellInGrid(currentTarget_.x, currentTarget_.y) // cell is in the grid
-            && currentMap_.logOdds(currentTarget_.x, currentTarget_.y) < 0  // cell is unoccupied by an obstacle
-            && planner_.isValidGoal(currentTarget_))            // planned pose is within acceptable radius of obstacle
+    if (!keep_turning && (currentTarget_.utime != 0)) {
+        std::cout << "INFO: Begin planning consideration" << std::endl;
+        if ((initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1))
         {
-            std::cout << currentTarget_.x << " " << currentTarget_.y << "\n";
-            currentPath_ = planner_.planPath(currentPose_, currentTarget_);
-        }
-        else {
-            // otherwise centroid is not suitable, so radial search to find suitable cells on frontier
-            pose_xyt_t newPose (currentPose_);
-            float radius = 0.02;
-            while (radius < 1){
-                std::cout << "radius: " << radius << "\n";
-                for (float angle = 0; angle < 2*M_PI; angle += (M_PI / 8.0)){
+            if(currentMap_.isCellInGrid(currentTarget_.x, currentTarget_.y) // cell is in the grid
+                && currentMap_.logOdds(currentTarget_.x, currentTarget_.y) < 0  // cell is unoccupied by an obstacle
+                && planner_.isValidGoal(currentTarget_))            // planned pose is within acceptable radius of obstacle
+            {
+                std::cout << "INFO: Valid goal found, begin planing" << std::endl;
+                std::cout << currentTarget_.x << " " << currentTarget_.y << "\n";
+                currentPath_ = planner_.planPath(currentPose_, currentTarget_);
+            }
+            else {
+                // otherwise centroid is not suitable, so radial search to find suitable cells on frontier
+                pose_xyt_t newPose (currentPose_);
+                float radius = 0.02;
+                while (radius < 1){
+                    std::cout << "radius: " << radius << "\n";
+                    for (float angle = 0; angle < 2*M_PI; angle += (M_PI / 8.0)){
 
-                    float dx = radius * cos(angle);
-                    float dy = radius * sin(angle);
-                    std::cout << dx << " " << dy << "\n";
-                    Point<double> coordinate (currentTarget_.x + dx, currentTarget_.y + dy);
-                    cell_t cell = global_position_to_grid_cell(coordinate, currentMap_);
-                    
-                    newPose.x = coordinate.x;
-                    newPose.y = coordinate.y;
-                    
-                    std::cout << newPose.x << " " << newPose.y << "\n";
-                    robot_path_t plannedPath;
+                        float dx = radius * cos(angle);
+                        float dy = radius * sin(angle);
+                        std::cout << dx << " " << dy << "\n";
+                        Point<double> coordinate (currentTarget_.x + dx, currentTarget_.y + dy);
+                        cell_t cell = global_position_to_grid_cell(coordinate, currentMap_);
+                        
+                        newPose.x = coordinate.x;
+                        newPose.y = coordinate.y;
+                        
+                        std::cout << newPose.x << " " << newPose.y << "\n";
+                        robot_path_t plannedPath;
 
-                    if(currentMap_.isCellInGrid(cell.x, cell.y)             // cell is in the grid
-                        && planner_.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
-                        {
-                            plannedPath = planner_.planPath(currentPose_, newPose);
-                            if (planner_.isPathSafe(plannedPath)){   // is path still safe
-                                currentPath_ = plannedPath;
+                        if(currentMap_.isCellInGrid(cell.x, cell.y)             // cell is in the grid
+                            && planner_.isValidGoal(newPose))            // planned pose is within acceptable radius of obstacle
+                            {
+                                std::cout << "INFO: Valid RADIAL goal found, begin planing" << std::endl;
+                                plannedPath = planner_.planPath(currentPose_, newPose);
+                                if (planner_.isPathSafe(plannedPath)){   // is path still safe
+                                    currentPath_ = plannedPath;
+                                }
                             }
-                        }
+                    }
+                    radius += 0.02;
                 }
-                radius += 0.02;
             }
         }
     }
-    else if (keep_turning) {
+    else if ((currentTarget_.utime != 0)) {
         mbot_motor_command_t turn;
         turn.angular_v = 0.5;
         turn.utime = 0;
         turn.trans_v = 0;
         
         lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &turn);
+    }
+    else {
+        std::cout << "WARNING: No target information has been received." << std::endl;
     }
     /////////////////////////////// End student code ///////////////////////////////
 
@@ -347,13 +366,13 @@ int8_t Pursuit::executePursuit(bool initialize)
     // Else if time is up, we lose
     else if(dt > TRIAL_TIME)
     {
-        std::cout << "TIME IS UP; EVADER WINS " << "\n";
+        std::cout << "INFO: TIME IS UP; EVADER WINS " << "\n";
         status.status = exploration_status_t::STATUS_FAILED;
     }
     // Else we contine
     else
     {
-        std::cout << "Continue pursuit" << std::endl;
+        std::cout << "INFO: Continue pursuit" << std::endl;
         status.status = exploration_status_t::STATUS_IN_PROGRESS;
     }
     
