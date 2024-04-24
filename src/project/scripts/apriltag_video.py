@@ -13,7 +13,7 @@ from lcmtypes import mbot_motor_command_t, pose_xyt_t
 from lcm import LCM
 
 ################################################################################
-threshold = 0.2  # TODO: Adjust based on testing
+threshold = 0.4  # TODO: Adjust based on testing
 
 import wave
 import pyaudio
