@@ -154,6 +154,16 @@ def apriltag_video(input_streams=[2], # For default cam use -> [0]
                 
                 time.wait(3)
 
+            else:
+                    msg = pose_xyt_t()
+
+                    msg.utime = int(time.time())
+                    msg.x = 0
+                    msg.theta = 0
+                    msg.y = -1
+
+                    lcm.publish("CAMERA_2_CHANNEL", msg.encode())
+
             if output_stream:
                 output.write(overlay)
 

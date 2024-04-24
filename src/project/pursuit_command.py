@@ -75,13 +75,56 @@ def play_wav(file_path):
     # Terminate PyAudio
     p.terminate()
 
+CAM_1_OFFSET = 0
+CAM_2_OFFSET = 120
+CAM_3_OFFSET = -120
+
+# def camera_handler(channel, data):
+#     global continue_pursuit
+#     global evader_direction
+#     cam_msg = pose_xyt_t.decode(data)
+
+#     cam_num = cam_msg.y
+
+#     if cam_num == 1:
+#         evader_direction = cam_msg.theta + CAM_1_OFFSET
+#     elif cam_num == 2:
+#         evader_direction = cam_msg.theta + CAM_2_OFFSET
+#     elif cam_num == 3:
+#         evader_direction = cam_msg.theta + CAM_3_OFFSET
+
+#     # NO APRIL TAG DETECTED
+#     else:
+#         no_cam_ = True
+
+#     evader_distance = cam_msg.x
+    
+#     if evader_distance < THRESHOLD:
+#         msg = pose_xyt_t()
+#         msg.x = 1
+#         msg.y = 1
+#         msg.theta = 1
+#         msg.utime = 1
+
+#         lc.publish("PE_SHUTDOWN", msg.encode())
+#         play_wav("3khz.wav")
+#         continue_pursuit = False
+#         lc.unsubscribe(subscription_cam)
+
 def camera_1_handler(channel, data):
     global continue_pursuit
     global evader_direction
+    global cam_1_detect
+
     cam_msg = pose_xyt_t.decode(data)
 
-    evader_direction = cam_msg.theta
+    evader_direction = cam_msg.theta + CAM_1_OFFSET
     evader_distance = cam_msg.x
+
+    if cam_msg.y == -1:
+        cam_1_detect = False
+    else:
+        cam_1_detect = True
 
     if evader_distance < THRESHOLD:
         msg = pose_xyt_t()
@@ -99,11 +142,18 @@ def camera_1_handler(channel, data):
 def camera_2_handler(channel, data):
     global continue_pursuit
     global evader_direction
+    global cam_2_detect
+
     cam_msg = pose_xyt_t.decode(data)
 
-    evader_direction = cam_msg.theta
+    evader_direction = cam_msg.theta + CAM_2_OFFSET
     evader_distance = cam_msg.x
 
+    if cam_msg.y == -1:
+        cam_2_detect = False
+    else:
+        cam_2_detect = True
+        
     if evader_distance < THRESHOLD:
         msg = pose_xyt_t()
         msg.x = 1
@@ -120,10 +170,17 @@ def camera_2_handler(channel, data):
 def camera_3_handler(channel, data):
     global continue_pursuit
     global evader_direction
+    global cam_3_detect
+
     cam_msg = pose_xyt_t.decode(data)
 
-    evader_direction = cam_msg.theta
+    evader_direction = cam_msg.theta + CAM_3_OFFSET
     evader_distance = cam_msg.x
+
+    if cam_msg.y == -1:
+        cam_3_detect = False
+    else:
+        cam_3_detect = True
 
     if evader_distance < THRESHOLD:
         msg = pose_xyt_t()
@@ -157,6 +214,7 @@ upper_bounds : Vector2D = Vector2D(10, 10)
 pursuit_agent = Pursuit(pursuer_initial_position, pursuer_speed, evader_initial_position, evader_speed, upper_bounds, lower_bounds)
 
 # Begin
+# subscription_cam = lc.subscribe("CAMERA_CHANNEL", camera_handler)
 subscription_cam_1 = lc.subscribe("CAMERA_1_CHANNEL", camera_1_handler)
 subscription_cam_2 = lc.subscribe("CAMERA_2_CHANNEL", camera_2_handler)
 subscription_cam_3 = lc.subscribe("CAMERA_3_CHANNEL", camera_3_handler)
@@ -165,13 +223,25 @@ subscription_good_mic = lc.subscribe("GOOD_MICROPHONE_CHANNEL", good_mic_handler
 try:
     while continue_pursuit:
         lc.handle()
-        next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
-        msg = pose_xyt_t()
-        msg.x = next_waypoint_pursuer.x
-        msg.y = next_waypoint_pursuer.y
-        msg.theta = 0
-        msg.utime = 0
 
-        lc.publish("PE_WAYPOINT", msg.encode())
+        if not cam_1_detect and not cam_2_detect and not cam_3_detect:
+            msg = pose_xyt_t()
+            msg.x = -1
+            msg.y = -1
+            msg.theta = -1
+            msg.utime = 0
+
+            lc.publish("TURN_TO_SOURCE", msg.encode())
+            
+        else:
+            next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
+            msg = pose_xyt_t()
+            msg.x = next_waypoint_pursuer.x
+            msg.y = next_waypoint_pursuer.y
+            msg.theta = 0
+            msg.utime = 0
+
+            lc.publish("PE_WAYPOINT", msg.encode())
+            
 except KeyboardInterrupt:
     pass

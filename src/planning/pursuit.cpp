@@ -107,6 +107,7 @@ void Pursuit::handleConfirmation(const lcm::ReceiveBuffer* rbuf, const std::stri
 
 void Pursuit::handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* request)
 {
+    keep_turning = false;
     std::lock_guard<std::mutex> autoLock(dataLock_);
     currentTarget_.theta = request->theta;
     currentTarget_.utime = request->utime;
@@ -132,7 +133,8 @@ void Pursuit::handleCamera(const lcm::ReceiveBuffer* rbuf, const std::string& ch
 void Pursuit::handleTurnToSource(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* turn_signal)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);
-    keep_turning = !keep_turning;
+
+    keep_turning = true;
 }
 
 bool Pursuit::isReadyToUpdate(void)
