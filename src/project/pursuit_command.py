@@ -2,8 +2,6 @@ from pursuit import Pursuit
 from evasion import Evasion
 from Vector2D import Vector2D
 
-import pygame
-from pygame.locals import *
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import cv2
@@ -20,60 +18,17 @@ lc = LCM("udpm://239.255.76.67:7667?ttl=2")
 import wave
 import pyaudio
 
-def play_wav(file_path):
-    # Open the WAV file
-    wf = wave.open(file_path, 'rb')
+global continue_pursuit
+continue_pursuit = True
 
-    # Initialize PyAudio
-    p = pyaudio.PyAudio()
+global cam_1_detect
+cam_1_detect = False
 
-    # Open a stream for playback
-    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-                    channels=wf.getnchannels(),
-                    rate=wf.getframerate(),
-                    output=True)
+global cam_2_detect
+cam_2_detect = False
 
-    # Read data from the WAV file and play it
-    data = wf.readframes(1024)
-    while data:
-        stream.write(data)
-        data = wf.readframes(1024)
-
-    # Stop and close the stream
-    stream.stop_stream()
-    stream.close()
-
-    # Terminate PyAudio
-    p.terminate()
-
-import wave
-import pyaudio
-
-def play_wav(file_path):
-    # Open the WAV file
-    wf = wave.open(file_path, 'rb')
-
-    # Initialize PyAudio
-    p = pyaudio.PyAudio()
-
-    # Open a stream for playback
-    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-                    channels=wf.getnchannels(),
-                    rate=wf.getframerate(),
-                    output=True)
-
-    # Read data from the WAV file and play it
-    data = wf.readframes(1024)
-    while data:
-        stream.write(data)
-        data = wf.readframes(1024)
-
-    # Stop and close the stream
-    stream.stop_stream()
-    stream.close()
-
-    # Terminate PyAudio
-    p.terminate()
+global cam_3_detect
+cam_3_detect = False
 
 CAM_1_OFFSET = 0
 CAM_2_OFFSET = 120
@@ -111,6 +66,32 @@ CAM_3_OFFSET = -120
 #         continue_pursuit = False
 #         lc.unsubscribe(subscription_cam)
 
+def play_wav(file_path):
+    # Open the WAV file
+    wf = wave.open(file_path, 'rb')
+
+    # Initialize PyAudio
+    p = pyaudio.PyAudio()
+
+    # Open a stream for playback
+    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                    channels=wf.getnchannels(),
+                    rate=wf.getframerate(),
+                    output=True)
+
+    # Read data from the WAV file and play it
+    data = wf.readframes(1024)
+    while data:
+        stream.write(data)
+        data = wf.readframes(1024)
+
+    # Stop and close the stream
+    stream.stop_stream()
+    stream.close()
+
+    # Terminate PyAudio
+    p.terminate()
+
 def camera_1_handler(channel, data):
     global continue_pursuit
     global evader_direction
@@ -123,20 +104,21 @@ def camera_1_handler(channel, data):
 
     if cam_msg.y == -1:
         cam_1_detect = False
+        print("No detection on cam 1")
     else:
         cam_1_detect = True
+        if evader_distance < THRESHOLD:
+            print("INFO: Distance within threshold")
+            msg = pose_xyt_t()
+            msg.x = 1
+            msg.y = 1
+            msg.theta = 1
+            msg.utime = 1
 
-    if evader_distance < THRESHOLD:
-        msg = pose_xyt_t()
-        msg.x = 1
-        msg.y = 1
-        msg.theta = 1
-        msg.utime = 1
-
-        lc.publish("PE_SHUTDOWN", msg.encode())
-        play_wav("3khz.wav")
-        continue_pursuit = False
-        lc.unsubscribe(subscription_cam_1)
+            lc.publish("PE_SHUTDOWN", msg.encode())
+            # play_wav("3khz.wav")
+            continue_pursuit = False
+            lc.unsubscribe(subscription_cam_1)
     
 
 def camera_2_handler(channel, data):
@@ -151,20 +133,21 @@ def camera_2_handler(channel, data):
 
     if cam_msg.y == -1:
         cam_2_detect = False
+        print("No detection on cam 2")
     else:
         cam_2_detect = True
-        
-    if evader_distance < THRESHOLD:
-        msg = pose_xyt_t()
-        msg.x = 1
-        msg.y = 1
-        msg.theta = 1
-        msg.utime = 1
+        if evader_distance < THRESHOLD:
+            print("INFO: Distance within threshold")
+            msg = pose_xyt_t()
+            msg.x = 1
+            msg.y = 1
+            msg.theta = 1
+            msg.utime = 1
 
-        lc.publish("PE_SHUTDOWN", msg.encode())
-        continue_pursuit = False
-        play_wav("3khz.wav")
-        lc.unsubscribe(subscription_cam_2)
+            lc.publish("PE_SHUTDOWN", msg.encode())
+            continue_pursuit = False
+            # play_wav("3khz.wav")
+            lc.unsubscribe(subscription_cam_2)
     
 
 def camera_3_handler(channel, data):
@@ -179,20 +162,21 @@ def camera_3_handler(channel, data):
 
     if cam_msg.y == -1:
         cam_3_detect = False
+        print("No detection on cam 3")
     else:
         cam_3_detect = True
+        if evader_distance < THRESHOLD:
+            print("INFO: Distance within threshold")
+            msg = pose_xyt_t()
+            msg.x = 1
+            msg.y = 1
+            msg.theta = 1
+            msg.utime = 1
 
-    if evader_distance < THRESHOLD:
-        msg = pose_xyt_t()
-        msg.x = 1
-        msg.y = 1
-        msg.theta = 1
-        msg.utime = 1
-
-        lc.publish("PE_SHUTDOWN", msg.encode())
-        play_wav("3khz.wav")
-        continue_pursuit = False
-        lc.unsubscribe(subscription_cam_3)
+            lc.publish("PE_SHUTDOWN", msg.encode())
+            # play_wav("3khz.wav")
+            continue_pursuit = False
+            lc.unsubscribe(subscription_cam_3)
 
 def good_mic_handler(channel, data):
     global continue_pursuit
@@ -220,28 +204,31 @@ subscription_cam_2 = lc.subscribe("CAMERA_2_CHANNEL", camera_2_handler)
 subscription_cam_3 = lc.subscribe("CAMERA_3_CHANNEL", camera_3_handler)
 subscription_good_mic = lc.subscribe("GOOD_MICROPHONE_CHANNEL", good_mic_handler)
 
-try:
-    while continue_pursuit:
-        lc.handle()
+# try:
+continue_pursuit = True
+while continue_pursuit:
+    lc.handle()
 
-        if not cam_1_detect and not cam_2_detect and not cam_3_detect:
-            msg = pose_xyt_t()
-            msg.x = -1
-            msg.y = -1
-            msg.theta = -1
-            msg.utime = 0
+    if not cam_1_detect and not cam_2_detect and not cam_3_detect:
+        print("INFO: No detection on any cameras - executing turn")
+        msg = pose_xyt_t()
+        msg.x = -1
+        msg.y = -1
+        msg.theta = -1
+        msg.utime = 0
 
-            lc.publish("TURN_TO_SOURCE", msg.encode())
-            
-        else:
-            next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
-            msg = pose_xyt_t()
-            msg.x = next_waypoint_pursuer.x
-            msg.y = next_waypoint_pursuer.y
-            msg.theta = 0
-            msg.utime = 0
+        lc.publish("TURN_TO_SOURCE", msg.encode())
+        
+    else:
+        next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
+        msg = pose_xyt_t()
+        msg.x = next_waypoint_pursuer.x
+        msg.y = next_waypoint_pursuer.y
+        msg.theta = 0
+        msg.utime = 0
 
-            lc.publish("PE_WAYPOINT", msg.encode())
-            
-except KeyboardInterrupt:
-    pass
+        lc.publish("PE_WAYPOINT", msg.encode())
+
+print("Ending pursuit")        
+# except KeyboardInterrupt:
+#     pass

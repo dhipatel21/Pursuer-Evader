@@ -154,8 +154,7 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
                         if (play_sound):
                             play_wav('3khz.wav')   # replace with actual end condition sound
 
-                time.sleep(3)
-            
+                time.sleep(3)       
             else:
                     msg = pose_xyt_t()
 

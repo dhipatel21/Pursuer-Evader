@@ -42,6 +42,10 @@ Pursuit::Pursuit(int32_t teamNumber,
     lcmInstance_->subscribe(PE_REQUEST_CHANNEL, &Pursuit::handleRequest, this);
     lcmInstance_->subscribe(GOOD_MICROPHONE_CHANNEL, &Pursuit::handleGoodMicrophone, this);
     lcmInstance_->subscribe(TURN_TO_SOURCE_CHANNEL, &Pursuit::handleTurnToSource, this);
+
+    lcmInstance_->subscribe(CAMERA_1_CHANNEL, &Pursuit::handleCamera, this);
+    lcmInstance_->subscribe(CAMERA_2_CHANNEL, &Pursuit::handleCamera, this);
+    lcmInstance_->subscribe(CAMERA_3_CHANNEL, &Pursuit::handleCamera, this);
     
     // Send an initial message indicating that the exploration module is initializing. Once the first map and pose are
     // received, then it will change to the exploring map state.
@@ -54,6 +58,10 @@ Pursuit::Pursuit(int32_t teamNumber,
     currentTarget_.y = 0;
     currentTarget_.theta = 0;
     currentTarget_.utime = 0;
+    evaderInfo_.x = 999;
+    evaderInfo_.y = 999;
+    evaderInfo_.theta = 0;
+    evaderInfo_.utime = 0;
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
     
@@ -61,7 +69,8 @@ Pursuit::Pursuit(int32_t teamNumber,
     params.robotRadius = 0.15;
     planner_.setParams(params);
 
-    start_time = std::chrono::system_clock::now();
+    start_time = std::chrono::duration_cast<std::chrono::seconds>(
+                   std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 
@@ -115,6 +124,7 @@ void Pursuit::handleConfirmation(const lcm::ReceiveBuffer* rbuf, const std::stri
 
 void Pursuit::handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* request)
 {
+    std::cout << "INFO: Waypoint request received" << std::endl;
     keep_turning = false;
     std::lock_guard<std::mutex> autoLock(dataLock_);
     currentTarget_.theta = request->theta;
@@ -133,15 +143,17 @@ void Pursuit::handleGoodMicrophone(const lcm::ReceiveBuffer* rbuf, const std::st
 void Pursuit::handleCamera(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* camera_info)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);
-    evaderInfo_.theta = camera_info->theta;
-    evaderInfo_.utime = camera_info->utime;
-    evaderInfo_.x = camera_info->x;
+    if (camera_info->y != -1) {
+        evaderInfo_.theta = camera_info->theta;
+        evaderInfo_.utime = camera_info->utime;
+        evaderInfo_.x = camera_info->x;
+    }
 }
 
 void Pursuit::handleTurnToSource(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* turn_signal)
 {
+    std::cout << "INFO: Turning request received" << std::endl;
     std::lock_guard<std::mutex> autoLock(dataLock_);
-
     keep_turning = true;
 }
 
@@ -150,7 +162,6 @@ bool Pursuit::isReadyToUpdate(void)
     std::lock_guard<std::mutex> autoLock(dataLock_);
     return haveNewMap_ && haveNewPose_;
 }
-
 
 void Pursuit::runPursuit(void)
 {
@@ -199,6 +210,7 @@ void Pursuit::executeStateMachine(void)
     // Run the state machine until the state remains the same after an iteration of the loop
     do
     {
+        std::cout << "Single state machine iteration" << std::endl;
         switch(state_)
         {
             case exploration_status_t::STATE_INITIALIZING:
@@ -333,13 +345,20 @@ int8_t Pursuit::executePursuit(bool initialize)
             }
         }
     }
-    else if ((currentTarget_.utime != 0)) {
-        mbot_motor_command_t turn;
-        turn.angular_v = 0.5;
-        turn.utime = 0;
-        turn.trans_v = 0;
+    // else if ((currentTarget_.utime != 0)) {
+    else if (true) {
+        std::cout << "INFO: Turning until camera located" << std::endl;
+        pose_xyt_t turn;
+        turn = currentPose_;
+        turn.theta += 0.5;
+
+        robot_path_t turn_path;
+        turn_path.path.push_back(turn);
+        turn_path.path.push_back(turn);
+        turn_path.path_length = 2;
+        turn_path.utime = 0;
         
-        lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &turn);
+        currentPath_ = turn_path;
     }
     else {
         std::cout << "WARNING: No target information has been received." << std::endl;
@@ -355,12 +374,17 @@ int8_t Pursuit::executePursuit(bool initialize)
     status.state = exploration_status_t::STATE_EXPLORING_MAP;
     
     const auto p1 = std::chrono::system_clock::now();
-    const auto dt = std::chrono::duration_cast<std::chrono::seconds>(
+    const int current_time = std::chrono::duration_cast<std::chrono::seconds>(
                    p1.time_since_epoch()).count();
+
+    int64_t dt = current_time - start_time;
+    std::cout << "Current dt: " << dt << std::endl;
+
 
     // If the evader is in range, we win
     if(evaderInfo_.x < CAPTURE_RADIUS)
     {
+        std::cout << "INFO: EVADER CAPUTRED " << "\n";
         status.status = exploration_status_t::STATUS_COMPLETE;
     }
     // Else if time is up, we lose
