@@ -64,8 +64,9 @@ def cam_angles(i, poses):
 
 def apriltag_video(input_streams=[2], # For default cam use -> [0]
                    output_stream=False,
-                   display_stream=True,
+                   display_stream=False,
                    detection_window_name='AprilTag',
+                   play_sound=False
                   ):
 
     '''
@@ -150,9 +151,10 @@ def apriltag_video(input_streams=[2], # For default cam use -> [0]
 
                         lcm.publish("SHUTDOWN_CHANNEL", msg.encode())
                         print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
-                        play_wav('3khz.wav')   # replace with actual end condition sound
+                        if (play_sound):
+                            play_wav('3khz.wav')   # replace with actual end condition sound
                 
-                time.wait(3)
+                time.sleep(3)
 
             else:
                     msg = pose_xyt_t()
@@ -175,4 +177,16 @@ def apriltag_video(input_streams=[2], # For default cam use -> [0]
 ################################################################################
 
 if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument("-c", "--camera", type=int, default=2)
+    parser.add_argument("-o", "--output", type=bool, default=False)
+    parser.add_argument("-d", "--display", type=bool, default=False)
+    parser.add_argument("-s", "--sound", type=bool, default=False)
+
+    args = parser.parse_args()
+    cam = [args.camera]
+    output = args.output
+    disp = args.display
+    sound = args.sound
+
     apriltag_video()
