@@ -6,6 +6,7 @@
 #include <common/timestamp.h>
 #include <mbot/mbot_channels.h>
 #include <slam/slam_channels.h>
+#include <lcmtypes/mbot_motor_command_t.hpp>
 #include <fstream>
 #include <iostream>
 #include <queue>
@@ -321,7 +322,8 @@ int8_t Pursuit::executeCompleted(bool initialize)
 
     // TODO end behavior
     // concludePursuit(true);
-    
+    mbot_motor_command_t cmd = {0, 0, 0};
+    lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
     return exploration_status_t::STATE_COMPLETED_EXPLORATION;
 }
 
@@ -338,6 +340,7 @@ int8_t Pursuit::executeFailed(bool initialize)
 
     // TODO end behavior
     // concludePursuit(false);
-    
+    mbot_motor_command_t cmd = {0, 0, 0};
+    lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
     return exploration_status_t::STATE_FAILED_EXPLORATION;
 }
