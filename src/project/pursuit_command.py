@@ -207,7 +207,7 @@ subscription_good_mic = lc.subscribe("GOOD_MICROPHONE_CHANNEL", good_mic_handler
 # try:
 continue_pursuit = True
 while continue_pursuit:
-    lc.handle()
+    lc.handle_timeout(1)
 
     if not cam_1_detect and not cam_2_detect and not cam_3_detect:
         print("INFO: No detection on any cameras - executing turn")

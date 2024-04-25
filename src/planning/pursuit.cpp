@@ -34,7 +34,7 @@ Pursuit::Pursuit(int32_t teamNumber,
 {
     assert(lcmInstance_);   // confirm a nullptr wasn't passed in
 
-    keep_turning = false;
+    keep_turning = true;
     
     lcmInstance_->subscribe(SLAM_MAP_CHANNEL, &Pursuit::handleMap, this);
     lcmInstance_->subscribe(SLAM_POSE_CHANNEL, &Pursuit::handlePose, this);
@@ -90,7 +90,7 @@ bool Pursuit::pursue()
         // Otherwise wait a bit for data to arrive
         else
         {
-            std::cout << "INFO: Not ready to update, sleeping" << std::endl;
+            // std::cout << "INFO: Not ready to update, sleeping" << std::endl;
             usleep(10000);
         }
     }
