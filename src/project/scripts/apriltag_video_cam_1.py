@@ -152,7 +152,7 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
                         print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
 
                         if (play_sound):
-                            play_wav('3khz.wav')   # replace with actual end condition sound
+                            play_wav('4khz.wav')   # replace with actual end condition sound
 
                 time.sleep(3)       
             else:
