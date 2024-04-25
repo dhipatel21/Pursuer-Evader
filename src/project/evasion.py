@@ -9,7 +9,9 @@ class Evasion:
         self.upper_bounds : Vector2D = upper_bounds
         self.lower_bounds : Vector2D = lower_bounds
 
-    def update_evader_random(self):
+        self.direction_state = 0
+
+    def update_evader_random(self, leg_done):
         """
         Move randomly according to the evader speed.
         """
@@ -20,36 +22,52 @@ class Evasion:
         # Return the pursuer's next waypoint
         return self.evader_position
     
-    def update_evader_CW(self):
+    def update_evader_CW(self, leg_done):
         """
         Move to the edge of the arena and then procees clockwise.
         """
-        if (self.evader_position.x == self.upper_bounds.x and self.evader_position.y != self.lower_bounds.y):
+        if (leg_done):
+            self.direction_state += 1
+        if (self.direction_state == 4):
+            self.direction_state = 0
+
+        if ((self.evader_position.x == self.upper_bounds.x and self.evader_position.y != self.lower_bounds.y)) or (self.direction_state == 0):
             self.evader_position.y -= self.speed
-        if (self.evader_position.y == self.lower_bounds.y and self.evader_position.x != self.lower_bounds.x):
+        elif ((self.evader_position.y == self.lower_bounds.y and self.evader_position.x != self.lower_bounds.x)) or (self.direction_state == 1):
             self.evader_position.x -= self.speed
-        if (self.evader_position.x == self.lower_bounds.x and self.evader_position.y != self.upper_bounds.y):
+        elif ((self.evader_position.x == self.lower_bounds.x and self.evader_position.y != self.upper_bounds.y)) or (self.direction_state == 2):
             self.evader_position.y += self.speed
-        if (self.evader_position.y == self.upper_bounds.y and self.evader_position.x != self.upper_bounds.x):
+        elif ((self.evader_position.y == self.upper_bounds.y and self.evader_position.x != self.upper_bounds.x)) or (self.direction_state == 3):
             self.evader_position.x += self.speed
+        else:
+            self.evader_position.x += self.speed
+            self.evader_position.y += self.speed
 
         self.evader_position = self.evader_position.saturate(self.upper_bounds, self.lower_bounds)
 
         # Return the pursuer's next waypoint
         return self.evader_position
     
-    def update_evader_CCW(self):
+    def update_evader_CCW(self, leg_done):
         """
         Move to the endge of the arena and then proceed counter-clockwise.
         """
-        if (self.evader_position.x == self.upper_bounds.x and self.evader_position.y != self.upper_bounds.y):
+        if (leg_done):
+            self.direction_state += 1
+        if (self.direction_state == 4):
+            self.direction_state = 0
+
+        if ((self.evader_position.x == self.upper_bounds.x and self.evader_position.y != self.upper_bounds.y)) or (self.direction_state == 0):
             self.evader_position.y += self.speed
-        if (self.evader_position.y == self.lower_bounds.y and self.evader_position.x != self.upper_bounds.x):
+        elif ((self.evader_position.y == self.lower_bounds.y and self.evader_position.x != self.upper_bounds.x)) or (self.direction_state == 1):
             self.evader_position.x += self.speed
-        if (self.evader_position.x == self.lower_bounds.x and self.evader_position.y != self.lower_bounds.y):
+        elif ((self.evader_position.x == self.lower_bounds.x and self.evader_position.y != self.lower_bounds.y)) or (self.direction_state == 2):
             self.evader_position.y -= self.speed
-        if (self.evader_position.y == self.upper_bounds.y and self.evader_position.x != self.lower_bounds.x):
+        elif ((self.evader_position.y == self.upper_bounds.y and self.evader_position.x != self.lower_bounds.x)) or (self.direction_state == 3):
             self.evader_position.x -= self.speed
+        else:
+            self.evader_position.x += self.speed
+            self.evader_position.y += self.speed
 
         self.evader_position = self.evader_position.saturate(self.upper_bounds, self.lower_bounds)
 

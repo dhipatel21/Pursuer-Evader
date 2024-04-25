@@ -2,8 +2,6 @@ from pursuit import Pursuit
 from evasion import Evasion
 from Vector2D import Vector2D
 
-import pygame
-from pygame.locals import *
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import cv2
@@ -17,6 +15,17 @@ THRESHOLD = 3000
 
 global continue_evasion
 continue_evasion = True
+
+global current_x
+current_x = 0
+
+global current_y
+current_y = 0
+
+global received_state
+received_state = False
+
+state_memory = []
 
 lc = LCM("udpm://239.255.76.67:7667?ttl=2")
 
@@ -34,6 +43,18 @@ def evasion_handler(channel, data):
         lc.publish("PE_SHUTDOWN", msg.encode())
         continue_evasion = False
         lc.unsubscribe(subscription_mic)
+
+def pose_handler(channel, data):
+    global current_x
+    global current_y
+    global received_state
+
+    print("Got a pose")
+
+    current_pose = pose_xyt_t.decode(data)
+    current_x = current_pose.x
+    current_y = current_pose.y
+    received_state = True
     
 
 # Initialize the simulation environment
@@ -49,17 +70,37 @@ evasion_agent = Evasion(evader_initial_position, evader_speed, upper_bounds, low
 
 # Begin
 subscription_mic = lc.subscribe("BAD_MICROPHONE_CHANNEL", evasion_handler)
+subscription_pose = lc.subscribe("SLAM_POSE", pose_handler)
 
-try:
-    while continue_evasion:
-        lc.handle()
-        next_waypoint_evader = evasion_agent.update_evader_CW()
-        msg = pose_xyt_t()
-        msg.x = next_waypoint_evader.x
-        msg.y = next_waypoint_evader.y
-        msg.theta = 0
-        msg.utime = 0
+continue_evasion = True
+while (received_state == False):
+    lc.handle_timeout(100)
+    print("ERROR: Awaiting SLAM pose")
+    time.sleep(1)
 
-        lc.publish("PE_WAYPOINT", msg.encode())
-except KeyboardInterrupt:
-    pass
+while continue_evasion:
+    lc.handle_timeout(1)
+
+    evasion_agent.evader_position = Vector2D(current_x, current_y)
+    state_memory.append(evasion_agent.evader_position)
+    distance_traveled = 1
+    if (len(state_memory) > 20):
+        state_memory = state_memory[-20:]
+        distance_traveled = (state_memory[-1] - state_memory[-20]).magnitude()
+
+    leg_done = False
+    if (distance_traveled < 1):
+        leg_done = True
+
+    next_waypoint_evader = evasion_agent.update_evader_CW(leg_done)
+    print("Desired evader position: ", next_waypoint_evader)
+    msg = pose_xyt_t()
+    msg.x = next_waypoint_evader.x
+    msg.y = next_waypoint_evader.y
+    msg.theta = 0
+    msg.utime = 0
+
+    lc.publish("PE_WAYPOINT", msg.encode())
+
+    time.sleep(1)
+

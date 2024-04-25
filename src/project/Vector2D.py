@@ -1,7 +1,7 @@
 class Vector2D:
     def __init__(self, x, y):
-        self.x = x
-        self.y = y
+        self.x : float = x
+        self.y : float = y
 
     def __add__(self, other):
         return Vector2D(self.x + other.x, self.y + other.y)

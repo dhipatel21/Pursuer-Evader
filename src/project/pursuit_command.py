@@ -190,7 +190,7 @@ subscription_cam_1 = lc.subscribe("CAMERA_1_CHANNEL", camera_1_handler)
 subscription_cam_2 = lc.subscribe("CAMERA_2_CHANNEL", camera_2_handler)
 subscription_cam_3 = lc.subscribe("CAMERA_3_CHANNEL", camera_3_handler)
 subscription_good_mic = lc.subscribe("GOOD_MICROPHONE_CHANNEL", good_mic_handler)
-subscription_pose = lc.subscribe("SLAM_POSE_CHANNEL", pose_handler)
+subscription_pose = lc.subscribe("SLAM_POSE", pose_handler)
 
 # try:
 continue_pursuit = True
