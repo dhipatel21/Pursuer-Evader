@@ -102,5 +102,5 @@ while continue_evasion:
 
     lc.publish("PE_WAYPOINT", msg.encode())
 
-    time.sleep(1)
+    time.sleep(0.1)
 
