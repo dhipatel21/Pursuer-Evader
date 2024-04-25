@@ -90,7 +90,7 @@ bool Pursuit::pursue()
         // Otherwise wait a bit for data to arrive
         else
         {
-            // std::cout << "INFO: Not ready to update, sleeping" << std::endl;
+            std::cout << "INFO: Not ready to update, sleeping" << std::endl;
             usleep(10000);
         }
     }
@@ -147,6 +147,7 @@ void Pursuit::handleCamera(const lcm::ReceiveBuffer* rbuf, const std::string& ch
         evaderInfo_.theta = camera_info->theta;
         evaderInfo_.utime = camera_info->utime;
         evaderInfo_.x = camera_info->x;
+        keep_turning = false;
     }
 }
 
@@ -346,7 +347,7 @@ int8_t Pursuit::executePursuit(bool initialize)
         }
     }
     // else if ((currentTarget_.utime != 0)) {
-    else if (true) {
+    else if (keep_turning) {
         std::cout << "INFO: Turning until camera located" << std::endl;
         pose_xyt_t turn;
         turn = currentPose_;

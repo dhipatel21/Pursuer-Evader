@@ -1,11 +1,11 @@
 from lcm import LCM
 
-from cam_t import cam_t
+from lcmtypes import pose_xyt_t
 
 lcm = LCM()
 
 while True:
-    message = cam_t()
-    message.distance = 10
+    message = pose_xyt_t()
+    message.x = 10
     lcm.publish("test", message.encode())
 
