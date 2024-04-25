@@ -65,7 +65,7 @@ Evade::Evade(int32_t teamNumber,
 
 bool Evade::evade()
 {
-    std::cout << "INFO: Pursue" << std::endl;
+    std::cout << "INFO: Evade" << std::endl;
     while((state_ != exploration_status_t::STATE_COMPLETED_EXPLORATION) 
         && (state_ != exploration_status_t::STATE_FAILED_EXPLORATION))
     {
