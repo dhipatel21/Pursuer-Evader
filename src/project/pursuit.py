@@ -13,13 +13,19 @@ class Pursuit:
         self.upper_bounds : Vector2D = upper_bounds
         self.lower_bounds : Vector2D = lower_bounds
 
-        self.evader_position_memory : list[Vector2D] = [evader_position]  
+        self.evader_position_memory : list[Vector2D] = []  
         self.evader_direction_memory : list[Vector2D] = []  
         # self.evader_position_memory : list[Vector2D] = []  
-        self.pursuer_position_memory : list[Vector2D] = [pursuer_position]
+        self.pursuer_position_memory : list[Vector2D] = []
         # self.pursuer_position_memory : list[Vector2D] = []
         self.evader_direction : Vector2D = (self.evader_position - self.pursuer_position).normalize()
         self.memory_size = 5  # The size of the memory for past positions
+
+    def populate_initial_memory(self, slam_position, pic_position):
+        self.pursuer_position_memory.append(slam_position)
+        self.evader_position_memory.append(pic_position)
+
+        return len(self.pursuer_position_memory)
 
     def calculate_moving_average_direction(self, new_direction):
         """

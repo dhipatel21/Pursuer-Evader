@@ -42,6 +42,9 @@ current_x = 0
 global current_y
 current_y = 0
 
+global evader_distance
+evader_distance = 0
+
 def play_wav(file_path):
     # Open the WAV file
     wf = wave.open(file_path, 'rb')
@@ -70,6 +73,7 @@ def play_wav(file_path):
 
 def camera_1_handler(channel, data):
     global continue_pursuit
+    global evader_distance
     global evader_direction
     global cam_1_detect
 
@@ -99,6 +103,7 @@ def camera_1_handler(channel, data):
 def camera_2_handler(channel, data):
     global continue_pursuit
     global evader_direction
+    global evader_distance
     global cam_2_detect
 
     cam_msg = pose_xyt_t.decode(data)
@@ -127,6 +132,7 @@ def camera_2_handler(channel, data):
 def camera_3_handler(channel, data):
     global continue_pursuit
     global evader_direction
+    global evader_distance
     global cam_3_detect
 
     cam_msg = pose_xyt_t.decode(data)
@@ -188,11 +194,29 @@ subscription_pose = lc.subscribe("SLAM_POSE_CHANNEL", pose_handler)
 
 # try:
 continue_pursuit = True
+while (len(pursuit_agent.pursuer_position_memory) < 2):
+    lc.handle_timeout(1)
+
+    if not cam_1_detect and not cam_2_detect and not cam_3_detect:
+        print("INFO: STARTUP: No detection on any cameras - executing turn")
+        msg = pose_xyt_t()
+        msg.x = -1
+        msg.y = -1
+        msg.theta = -1
+        msg.utime = 0
+        lc.publish("TURN_TO_SOURCE", msg.encode())
+    else:
+        print("INFO: Initiual waypoints %i", )
+        pursuit_agent.populate_initial_memory(Vector2D(current_x, current_y), Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
+
+    time.sleep(1)
+
+
 while continue_pursuit:
     lc.handle_timeout(1)
 
     if not cam_1_detect and not cam_2_detect and not cam_3_detect:
-        # print("INFO: No detection on any cameras - executing turn")
+        print("INFO: No detection on any cameras - executing turn")
         msg = pose_xyt_t()
         msg.x = -1
         msg.y = -1
@@ -209,7 +233,7 @@ while continue_pursuit:
         msg.utime = 0
 
         lc.publish("PE_WAYPOINT", msg.encode())
-        time.sleep(1)
+    time.sleep(1)
 
 print("Ending pursuit")        
 # except KeyboardInterrupt:
