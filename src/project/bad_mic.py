@@ -8,7 +8,7 @@ from lcmtypes import mbot_motor_command_t, pose_xyt_t
 # Define constants
 RATE = 44100  # Sampling rate
 BLOCK_SIZE = 1024  # Block size for audio input
-THRESHOLD_FREQUENCY = 3000  # TODO: Adjust based on testing, Frequency threshold in Hz
+THRESHOLD_FREQUENCY = 3500  # TODO: Adjust based on testing, Frequency threshold in Hz
 
 # Callback function for audio input
 def audio_callback(indata, frames, time, status):
@@ -27,6 +27,7 @@ def audio_callback(indata, frames, time, status):
     lcm.publish("BAD_MICROPHONE_CHANNEL", msg.encode())
     
     if dominant_frequency >= THRESHOLD_FREQUENCY:
+        print(dominant_frequency)
         sd.stop()
         msg = pose_xyt_t()
         msg.x = 1
@@ -39,7 +40,7 @@ def audio_callback(indata, frames, time, status):
 # Main function
 def main():
     # Find the index of the USB microphone
-    mic_index = 1
+    mic_index = 2
     # print(sd.query_devices())     # use to find mic index
     # Start audio input stream
     with sd.InputStream(device=mic_index, channels=1, samplerate=RATE,

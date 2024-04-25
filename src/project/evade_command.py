@@ -11,7 +11,7 @@ import sys
 from lcm import LCM
 from lcmtypes import mbot_motor_command_t, pose_xyt_t
 
-THRESHOLD = 3000
+THRESHOLD = 2600
 
 global continue_evasion
 continue_evasion = True
