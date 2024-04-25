@@ -206,7 +206,8 @@ while (len(pursuit_agent.pursuer_position_memory) < 2):
         msg.utime = 0
         lc.publish("TURN_TO_SOURCE", msg.encode())
     else:
-        print("INFO: Initiual waypoints %i", )
+        print("INFO: Initial waypoints %i", len(pursuit_agent.pursuer_position_memory))
+        print(Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
         pursuit_agent.populate_initial_memory(Vector2D(current_x, current_y), Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
 
     time.sleep(1)
@@ -225,13 +226,14 @@ while continue_pursuit:
         lc.publish("TURN_TO_SOURCE", msg.encode())
     else:
         next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(current_x, current_y), Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
-        print(next_waypoint_pursuer)
         msg = pose_xyt_t()
         msg.x = next_waypoint_pursuer.x
         msg.y = next_waypoint_pursuer.y
         msg.theta = 0
         msg.utime = 0
 
+        print("Evader position: ", Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
+        print("Desired pursuer position: ", next_waypoint_pursuer)
         lc.publish("PE_WAYPOINT", msg.encode())
     time.sleep(1)
 
