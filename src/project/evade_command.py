@@ -15,6 +15,9 @@ from lcmtypes import mbot_motor_command_t, pose_xyt_t
 
 THRESHOLD = 3000
 
+global continue_evasion
+continue_evasion = True
+
 lc = LCM("udpm://239.255.76.67:7667?ttl=2")
 
 def evasion_handler(channel, data):
