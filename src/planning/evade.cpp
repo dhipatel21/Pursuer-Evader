@@ -47,6 +47,10 @@ Evade::Evade(int32_t teamNumber,
     status.team_number = teamNumber_;
     status.state = exploration_status_t::STATE_INITIALIZING;
     status.status = exploration_status_t::STATUS_IN_PROGRESS;
+    currentTarget_.x = 0;
+    currentTarget_.y = 0;
+    currentTarget_.theta = 0;
+    currentTarget_.utime = 0;
     
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
     
@@ -54,12 +58,14 @@ Evade::Evade(int32_t teamNumber,
     params.robotRadius = 0.15;
     planner_.setParams(params);
 
-    start_time = std::chrono::system_clock::now();
+    start_time = std::chrono::duration_cast<std::chrono::seconds>(
+                   std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 
 bool Evade::evade()
 {
+    std::cout << "INFO: Pursue" << std::endl;
     while((state_ != exploration_status_t::STATE_COMPLETED_EXPLORATION) 
         && (state_ != exploration_status_t::STATE_FAILED_EXPLORATION))
     {
@@ -104,6 +110,7 @@ void Evade::handleConfirmation(const lcm::ReceiveBuffer* rbuf, const std::string
 
 void Evade::handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* request)
 {
+    std::cout << "INFO: Waypoint request received" << std::endl;
     std::lock_guard<std::mutex> autoLock(dataLock_);
     currentTarget_.theta = request->theta;
     currentTarget_.utime = request->utime;
@@ -130,6 +137,7 @@ bool Evade::isReadyToUpdate(void)
 
 void Evade::runEvade(void)
 {
+    std::cout << "INFO: Run evade" << std::endl;
     assert(isReadyToUpdate());
     
     copyDataForUpdate();
@@ -200,7 +208,7 @@ void Evade::executeStateMachine(void)
     //if path confirmation was not received, resend path
     if(!pathReceived_)
     {
-        std::cout << "the current path was not received by motion_controller, attempting to send again:\n";
+        std::cout << "INFO: Evade: The current path was not received by motion_controller, attempting to send again:\n";
 
         std::cout << "timestamp: " << currentPath_.utime << "\n";
 
@@ -235,6 +243,7 @@ int8_t Evade::executeInitializing(void)
 {
     /////////////////////////   Create the status message    //////////////////////////
     // Immediately transition to evading once the first bit of data has arrived
+    std::cout << "INFO: Execute initializing" << std::endl;
     exploration_status_t status;
     status.utime = utime_now();
     status.team_number = teamNumber_;
@@ -248,6 +257,7 @@ int8_t Evade::executeInitializing(void)
 
 int8_t Evade::executeEvade(bool initialize)
 {
+    std::cout << "INFO: Execute evasion" << std::endl;
     planner_.setMap(currentMap_); // update map from SLAM
 
     float goalDist = 0;
@@ -264,6 +274,7 @@ int8_t Evade::executeEvade(bool initialize)
             && currentMap_.logOdds(currentTarget_.x, currentTarget_.y) < 0  // cell is unoccupied by an obstacle
             && planner_.isValidGoal(currentTarget_))            // planned pose is within acceptable radius of obstacle
         {
+            std::cout << "INFO: Valid goal found, begin planing" << std::endl;
             std::cout << currentTarget_.x << " " << currentTarget_.y << "\n";
             currentPath_ = planner_.planPath(currentPose_, currentTarget_);
         }
@@ -310,17 +321,22 @@ int8_t Evade::executeEvade(bool initialize)
     status.state = exploration_status_t::STATE_EXPLORING_MAP;
 
     const auto p1 = std::chrono::system_clock::now();
-    const auto dt = std::chrono::duration_cast<std::chrono::seconds>(
+    const int current_time = std::chrono::duration_cast<std::chrono::seconds>(
                    p1.time_since_epoch()).count();
     
+    int64_t dt = current_time - start_time;
+    std::cout << "Current dt: " << dt << std::endl;
+
     // If time has expired, we win
     if (dt > TRIAL_TIME)
     {
+        std::cout << "INFO: TIME IS UP; EVADER WINS " << "\n";
         status.status = exploration_status_t::STATUS_COMPLETE;
     }
     // Else we should keep running (we let the shutdown handler tell us we lose)
     else
     {
+        std::cout << "INFO: Continue evasion" << std::endl;
         status.status = exploration_status_t::STATUS_IN_PROGRESS;
     }
     
@@ -336,7 +352,11 @@ int8_t Evade::executeEvade(bool initialize)
         // If evasion is completed, shut down gracefully
         case exploration_status_t::STATUS_COMPLETE:
             return exploration_status_t::STATE_RETURNING_HOME;
-            
+        
+        // If something has gone wrong and we can't reach all frontiers, then fail the exploration.
+        case exploration_status_t::STATUS_FAILED:
+            return exploration_status_t::STATE_FAILED_EXPLORATION;
+
         default:
             std::cerr << "ERROR: Evade::executeEvade: Set an invalid exploration status. Evasion failed!";
             return exploration_status_t::STATE_FAILED_EXPLORATION;

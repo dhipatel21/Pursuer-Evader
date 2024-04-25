@@ -109,7 +109,7 @@ private:
     bool pathReceived_;
     int64_t most_recent_path_time;
 
-    std::chrono::_V2::system_clock::time_point start_time;
+    int64_t start_time;
 
     /////////////////////////// End student code ///////////////////////////////
     
