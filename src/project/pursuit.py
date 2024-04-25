@@ -79,8 +79,10 @@ class Pursuit:
         
         return future_position
     
-    def update_positions(self, new_evader_direction):
+    def update_positions(self, new_evader_direction, new_pursuer_position):
         # Assume the new direction is a unit vector (magnitude of 1)
+        self.pursuer_position = new_pursuer_position
+
         self.evader_direction_memory.append(new_evader_direction)
         self.pursuer_position_memory.append(self.pursuer_position)
 
@@ -134,9 +136,9 @@ class Pursuit:
         # Return the pursuer's next waypoint
         return self.pursuer_position
     
-    def update_pursuer_converging_chase(self, evader_direction, prediction_time=5.0):
+    def update_pursuer_converging_chase(self, pursuer_position, evader_direction, prediction_time=5.0):
         # Update the evader's position and history
-        self.update_positions(evader_direction)
+        self.update_positions(evader_direction, pursuer_position)
         
         # Predict the future position of the evader
         future_evader_position = self.predict_future_position(prediction_time=prediction_time)
@@ -148,11 +150,13 @@ class Pursuit:
         ).normalize()
 
         # Update the pursuer's position towards the predicted future position of the evader
-        self.pursuer_position += to_future_evader * self.evader_speed
-        self.pursuer_position.saturate(self.upper_bounds, self.lower_bounds)
+        ideal_pursuer = self.pursuer_position + to_future_evader * self.evader_speed
+        print(ideal_pursuer.magnitude())
+        
+        ideal_pursuer.saturate(self.upper_bounds, self.lower_bounds)
         
         # Return the pursuer's next waypoint
-        return self.pursuer_position
+        return ideal_pursuer
 
     def intercept_vector(self, evader_direction):
         velocity = self.predict_velocity().normalize()

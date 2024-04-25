@@ -34,37 +34,13 @@ CAM_1_OFFSET = 0
 CAM_2_OFFSET = 120
 CAM_3_OFFSET = -120
 
-# def camera_handler(channel, data):
-#     global continue_pursuit
-#     global evader_direction
-#     cam_msg = pose_xyt_t.decode(data)
+evader_direction = 0
 
-#     cam_num = cam_msg.y
+global current_x
+current_x = 0
 
-#     if cam_num == 1:
-#         evader_direction = cam_msg.theta + CAM_1_OFFSET
-#     elif cam_num == 2:
-#         evader_direction = cam_msg.theta + CAM_2_OFFSET
-#     elif cam_num == 3:
-#         evader_direction = cam_msg.theta + CAM_3_OFFSET
-
-#     # NO APRIL TAG DETECTED
-#     else:
-#         no_cam_ = True
-
-#     evader_distance = cam_msg.x
-    
-#     if evader_distance < THRESHOLD:
-#         msg = pose_xyt_t()
-#         msg.x = 1
-#         msg.y = 1
-#         msg.theta = 1
-#         msg.utime = 1
-
-#         lc.publish("PE_SHUTDOWN", msg.encode())
-#         play_wav("3khz.wav")
-#         continue_pursuit = False
-#         lc.unsubscribe(subscription_cam)
+global current_y
+current_y = 0
 
 def play_wav(file_path):
     # Open the WAV file
@@ -120,7 +96,6 @@ def camera_1_handler(channel, data):
             continue_pursuit = False
             lc.unsubscribe(subscription_cam_1)
     
-
 def camera_2_handler(channel, data):
     global continue_pursuit
     global evader_direction
@@ -149,7 +124,6 @@ def camera_2_handler(channel, data):
             # play_wav("3khz.wav")
             lc.unsubscribe(subscription_cam_2)
     
-
 def camera_3_handler(channel, data):
     global continue_pursuit
     global evader_direction
@@ -185,6 +159,13 @@ def good_mic_handler(channel, data):
 
     evader_direction = mic_msg.theta
     
+def pose_handler(channel, data):
+    global current_x
+    global current_y
+    current_pose = pose_xyt_t.decode(data)
+    current_x = current_pose.x
+    current_y = current_pose.y
+
 
 # Initialize the simulation environment
 pursuer_initial_position = Vector2D(0, 0)
@@ -203,6 +184,7 @@ subscription_cam_1 = lc.subscribe("CAMERA_1_CHANNEL", camera_1_handler)
 subscription_cam_2 = lc.subscribe("CAMERA_2_CHANNEL", camera_2_handler)
 subscription_cam_3 = lc.subscribe("CAMERA_3_CHANNEL", camera_3_handler)
 subscription_good_mic = lc.subscribe("GOOD_MICROPHONE_CHANNEL", good_mic_handler)
+subscription_pose = lc.subscribe("SLAM_POSE_CHANNEL", pose_handler)
 
 # try:
 continue_pursuit = True
@@ -210,17 +192,16 @@ while continue_pursuit:
     lc.handle_timeout(1)
 
     if not cam_1_detect and not cam_2_detect and not cam_3_detect:
-        print("INFO: No detection on any cameras - executing turn")
+        # print("INFO: No detection on any cameras - executing turn")
         msg = pose_xyt_t()
         msg.x = -1
         msg.y = -1
         msg.theta = -1
         msg.utime = 0
-
         lc.publish("TURN_TO_SOURCE", msg.encode())
-        
     else:
-        next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
+        next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(current_x, current_y), Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
+        print(next_waypoint_pursuer)
         msg = pose_xyt_t()
         msg.x = next_waypoint_pursuer.x
         msg.y = next_waypoint_pursuer.y
@@ -228,6 +209,7 @@ while continue_pursuit:
         msg.utime = 0
 
         lc.publish("PE_WAYPOINT", msg.encode())
+        time.sleep(1)
 
 print("Ending pursuit")        
 # except KeyboardInterrupt:
