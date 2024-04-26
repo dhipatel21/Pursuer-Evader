@@ -29,20 +29,7 @@ global cam_1_last_detection
 cam_1_detect = False
 cam_1_last_detection = int(time.time())
 
-
-global cam_2_detect
-global cam_2_last_detection
-cam_2_detect = False
-cam_2_last_detection = int(time.time())
-
-global cam_3_detect
-global cam_3_last_detection
-cam_3_detect = False
-cam_3_last_detection = int(time.time())
-
 CAM_1_OFFSET = 0
-CAM_2_OFFSET = 120
-CAM_3_OFFSET = -120
 
 evader_direction = 0
 
@@ -68,17 +55,16 @@ def camera_1_handler(channel, data):
 
     cam_msg = pose_xyt_t.decode(data)
 
-    evader_direction = cam_msg.theta + CAM_1_OFFSET
-    evader_distance = cam_msg.x
-
-    print("INFO: Evader distance: ", evader_distance)
-
     current_time = int(time.time())
 
     if (cam_msg.y == -1):
         cam_1_detect = False
         print("No detection on cam 1")
     else:
+        evader_direction = cam_msg.theta + CAM_1_OFFSET
+        evader_distance = cam_msg.x
+
+        print("INFO: Evader distance: ", evader_distance)
         cam_1_detect = True
         cam_1_last_detection = current_time
         if evader_distance < THRESHOLD:
@@ -88,9 +74,14 @@ def camera_1_handler(channel, data):
             msg.y = 1
             msg.theta = 1
             msg.utime = 1
+            continue_pursuit = False
 
             lc.publish("PE_SHUTDOWN", msg.encode())
             lc.unsubscribe(subscription_cam_1)
+            sys.exit()
+
+def shutdown_handler(channel, data):
+    quit()
 
 def good_mic_handler(channel, data):
     global continue_pursuit
@@ -125,6 +116,7 @@ pursuit_agent = Pursuit(pursuer_initial_position, pursuer_speed, evader_initial_
 subscription_cam_1 = lc.subscribe("CAMERA_1_CHANNEL", camera_1_handler)
 subscription_good_mic = lc.subscribe("GOOD_MICROPHONE_CHANNEL", good_mic_handler)
 subscription_pose = lc.subscribe("SLAM_POSE", pose_handler)
+subscription_shutdown = lc.subscribe("PE_SHUTODWN", shutdown_handler)
 
 # try:
 continue_pursuit = True
@@ -133,9 +125,7 @@ while (len(pursuit_agent.pursuer_position_memory) < 2):
 
     current_time = int(time.time())
     cam_1_dt = current_time - cam_1_last_detection
-    cam_2_dt = current_time - cam_2_last_detection
-    cam_3_dt = current_time - cam_3_last_detection
-    if not cam_1_detect and not cam_2_detect and not cam_3_detect and (cam_1_dt > cam_dt_threshold) and (cam_2_dt > cam_dt_threshold) and (cam_3_dt > cam_dt_threshold):
+    if not cam_1_detect and (cam_1_dt > cam_dt_threshold):
         print("INFO: STARTUP: No detection on any cameras - executing turn")
         msg = pose_xyt_t()
         msg.x = -1
@@ -143,14 +133,14 @@ while (len(pursuit_agent.pursuer_position_memory) < 2):
         msg.theta = -1
         msg.utime = 0
         lc.publish("TURN_TO_SOURCE", msg.encode())
-    elif (cam_1_detect or cam_2_detect or cam_3_detect):
+    elif (cam_1_detect):
         print("INFO: Initial waypoints %i", len(pursuit_agent.pursuer_position_memory))
         print(Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
         pursuit_agent.populate_initial_memory(Vector2D(current_x, current_y), Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
     else:
-        print("WARNING: INIT: Camera timeout in progress. Current camera dt is at ", np.min([cam_1_dt, cam_2_dt, cam_3_dt]), " seconds")
+        print("WARNING: INIT: Camera timeout in progress. Current camera dt is at ", cam_1_dt, " seconds")
 
-    time.sleep(1)
+    time.sleep(0.1)
 
 
 while continue_pursuit:
@@ -158,9 +148,7 @@ while continue_pursuit:
 
     current_time = int(time.time())
     cam_1_dt = current_time - cam_1_last_detection
-    cam_2_dt = current_time - cam_2_last_detection
-    cam_3_dt = current_time - cam_3_last_detection
-    if not cam_1_detect and not cam_2_detect and not cam_3_detect and (cam_1_dt > cam_dt_threshold) and (cam_2_dt > cam_dt_threshold) and (cam_3_dt > cam_dt_threshold):
+    if not cam_1_detect and (cam_1_dt > cam_dt_threshold):
         print("INFO: No detection on any cameras - executing turn")
         msg = pose_xyt_t()
         msg.x = -1
@@ -180,9 +168,9 @@ while continue_pursuit:
         print("Desired pursuer position: ", next_waypoint_pursuer)
         lc.publish("PE_WAYPOINT", msg.encode())
 
-    if not cam_1_detect and not cam_2_detect and not cam_3_detect:
-        print("WARNING: MAIN: Camera timeout in progress. Current camera dt is at ", np.min([cam_1_dt, cam_2_dt, cam_3_dt]), " seconds")
-    time.sleep(1)
+    if not cam_1_detect:
+        print("WARNING: MAIN: Camera timeout in progress. Current camera dt is at ", cam_1_dt, " seconds")
+
     time.sleep(0.1)
 
 print("Ending pursuit")        
