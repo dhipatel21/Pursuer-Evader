@@ -88,7 +88,7 @@ while (received_state == False):
     print("ERROR: Awaiting SLAM pose")
     time.sleep(1)
 
-while continue_evasion:
+while continue_evasion and (high_freq_acc < 10):
     lc.handle_timeout(1)
 
     evasion_agent.evader_position = Vector2D(current_x, current_y)
