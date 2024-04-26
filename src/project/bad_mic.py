@@ -43,18 +43,19 @@ def main():
     mic_index = -1
     # print(sd.query_devices())     # use to find mic index
     for i in range(len(sd.query_devices())):
-        str = "USB PnP Sound Device: Audio (hw:0,0)"
-        if (sd.query_devices()[i]["name"] == str):
+        str = "USB PnP Sound Device: Audio"
+        if (sd.query_devices()[i]["name"][:len(str)] == str):
                 mic_index = i
                 break
     
     if mic_index == -1:
+        print("ERROR: failed to locate mic index")
         exit(1)
     # Start audio input stream
     with sd.InputStream(device=mic_index, channels=1, samplerate=RATE,
                          blocksize=BLOCK_SIZE, callback=audio_callback):
         print("Listening for audio...")
-        input("Press Enter to exit.")
+        input("Press Enter to exit.\n")
     
 if __name__ == "__main__":
     main()

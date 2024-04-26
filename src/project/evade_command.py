@@ -25,24 +25,32 @@ current_y = 0
 global received_state
 received_state = False
 
+global high_freq_acc
+high_freq_acc = 0
+
 state_memory = []
 
 lc = LCM("udpm://239.255.76.67:7667?ttl=2")
 
 def evasion_handler(channel, data):
     global continue_evasion
+    global high_freq_acc
     mic_msg = pose_xyt_t.decode(data)
 
     if mic_msg.x >= THRESHOLD:
-        msg = pose_xyt_t()
-        msg.x = 1
-        msg.y = 1
-        msg.theta = 1
-        msg.utime = 1
+        high_freq_acc += 1
+        if (high_freq_acc > 10):
+            msg = pose_xyt_t()
+            msg.x = 1
+            msg.y = 1
+            msg.theta = 1
+            msg.utime = 1
 
-        lc.publish("PE_SHUTDOWN", msg.encode())
-        continue_evasion = False
-        lc.unsubscribe(subscription_mic)
+            lc.publish("PE_SHUTDOWN", msg.encode())
+            continue_evasion = False
+            lc.unsubscribe(subscription_mic)
+        else:
+            print("Current status of HF acc? ", high_freq_acc)
 
 def pose_handler(channel, data):
     global current_x
