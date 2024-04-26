@@ -103,8 +103,8 @@ def pose_handler(channel, data):
 # Initialize the simulation environment
 pursuer_initial_position = Vector2D(0, 0)
 evader_initial_position = Vector2D(10, 10)
-pursuer_speed = 3
-evader_speed = 3
+pursuer_speed = 0.3
+evader_speed = 0.3
 
 lower_bounds : Vector2D = Vector2D(0, 0)
 upper_bounds : Vector2D = Vector2D(10, 10)
@@ -140,7 +140,7 @@ while (len(pursuit_agent.pursuer_position_memory) < 2):
     else:
         print("WARNING: INIT: Camera timeout in progress. Current camera dt is at ", cam_1_dt, " seconds")
 
-    time.sleep(0.1)
+    time.sleep(1)
 
 
 while continue_pursuit:
@@ -171,7 +171,7 @@ while continue_pursuit:
     if not cam_1_detect:
         print("WARNING: MAIN: Camera timeout in progress. Current camera dt is at ", cam_1_dt, " seconds")
 
-    time.sleep(0.1)
+    time.sleep(1)
 
 print("Ending pursuit")        
 # except KeyboardInterrupt:
