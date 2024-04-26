@@ -11,7 +11,7 @@ import sys
 from lcm import LCM
 from lcmtypes import mbot_motor_command_t, pose_xyt_t
 
-THRESHOLD = 2600
+THRESHOLD = 3500
 
 global continue_evasion
 continue_evasion = True
@@ -49,6 +49,8 @@ def evasion_handler(channel, data):
             lc.publish("PE_SHUTDOWN", msg.encode())
             continue_evasion = False
             lc.unsubscribe(subscription_mic)
+            print("=======EXITING NOW=======")
+            sys.exit()
         else:
             print("Current status of HF acc? ", high_freq_acc)
 
@@ -111,4 +113,7 @@ while continue_evasion:
     lc.publish("PE_WAYPOINT", msg.encode())
 
     time.sleep(0.1)
+
+print("=======EXITING NOW=======")
+sys.exit()
 
