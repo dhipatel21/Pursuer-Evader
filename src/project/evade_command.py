@@ -70,8 +70,8 @@ def pose_handler(channel, data):
 # Initialize the simulation environment
 pursuer_initial_position = Vector2D(0, 0)
 evader_initial_position = Vector2D(10, 10)
-pursuer_speed = 1.0
-evader_speed = 1.0
+pursuer_speed = 3
+evader_speed = 3
 
 lower_bounds : Vector2D = Vector2D(0, 0)
 upper_bounds : Vector2D = Vector2D(10, 10)

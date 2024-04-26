@@ -22,7 +22,7 @@ global continue_pursuit
 continue_pursuit = True
 
 global cam_dt_threshold
-cam_dt_threshold = 2
+cam_dt_threshold = 10
 
 global cam_1_detect
 global cam_1_last_detection
@@ -103,8 +103,8 @@ def pose_handler(channel, data):
 # Initialize the simulation environment
 pursuer_initial_position = Vector2D(0, 0)
 evader_initial_position = Vector2D(10, 10)
-pursuer_speed = 0.3
-evader_speed = 0.3
+pursuer_speed = 3
+evader_speed = 3
 
 lower_bounds : Vector2D = Vector2D(0, 0)
 upper_bounds : Vector2D = Vector2D(10, 10)

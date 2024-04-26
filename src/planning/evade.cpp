@@ -395,16 +395,4 @@ int8_t Evade::executeFailed(bool initialize)
     mbot_motor_command_t cmd = {0, 0, 0};
     lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
     return exploration_status_t::STATE_FAILED_EXPLORATION;
-
-    // # Stop
-    // stop = mbot_motor_command_t()
-    // stop.utime = current_utime()
-    // stop.trans_v = 0.0
-    // stop.angular_v = 0.0
-
-    // stop_time = timestamp_t()
-    // stop_time.utime = stop.utime
-    // lc.publish("MBOT_TIMESYNC", stop_time.encode())
-    // lc.publish("MBOT_MOTOR_COMMAND", stop.encode())
-    // time.sleep(STOP_LENGTH)
 }
