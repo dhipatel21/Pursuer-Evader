@@ -21,14 +21,24 @@ import pyaudio
 global continue_pursuit
 continue_pursuit = True
 
+global cam_dt_threshold
+cam_dt_threshold = 2
+
 global cam_1_detect
+global cam_1_last_detection
 cam_1_detect = False
+cam_1_last_detection = int(time.time())
+
 
 global cam_2_detect
+global cam_2_last_detection
 cam_2_detect = False
+cam_2_last_detection = int(time.time())
 
 global cam_3_detect
+global cam_3_last_detection
 cam_3_detect = False
+cam_3_last_detection = int(time.time())
 
 CAM_1_OFFSET = 0
 CAM_2_OFFSET = 120
@@ -76,17 +86,22 @@ def camera_1_handler(channel, data):
     global evader_distance
     global evader_direction
     global cam_1_detect
+    global cam_dt_threshold
+    global cam_1_last_detection
 
     cam_msg = pose_xyt_t.decode(data)
 
     evader_direction = cam_msg.theta + CAM_1_OFFSET
     evader_distance = cam_msg.x
 
-    if cam_msg.y == -1:
+    current_time = int(time.time())
+
+    if (cam_msg.y == -1):
         cam_1_detect = False
         print("No detection on cam 1")
     else:
         cam_1_detect = True
+        cam_1_last_detection = current_time
         if evader_distance < THRESHOLD:
             print("INFO: Distance within threshold")
             msg = pose_xyt_t()
@@ -105,17 +120,21 @@ def camera_2_handler(channel, data):
     global evader_direction
     global evader_distance
     global cam_2_detect
+    global cam_2_last_detection
 
     cam_msg = pose_xyt_t.decode(data)
 
     evader_direction = cam_msg.theta + CAM_2_OFFSET
     evader_distance = cam_msg.x
 
-    if cam_msg.y == -1:
+    current_time = int(time.time())
+
+    if (cam_msg.y == -1):
         cam_2_detect = False
         print("No detection on cam 2")
     else:
         cam_2_detect = True
+        cam_2_last_detection = current_time
         if evader_distance < THRESHOLD:
             print("INFO: Distance within threshold")
             msg = pose_xyt_t()
@@ -134,17 +153,21 @@ def camera_3_handler(channel, data):
     global evader_direction
     global evader_distance
     global cam_3_detect
+    global cam_3_last_detection
 
     cam_msg = pose_xyt_t.decode(data)
 
     evader_direction = cam_msg.theta + CAM_3_OFFSET
     evader_distance = cam_msg.x
 
+    current_time = int(time.time())
+
     if cam_msg.y == -1:
         cam_3_detect = False
         print("No detection on cam 3")
     else:
         cam_3_detect = True
+        cam_3_last_detection = current_time
         if evader_distance < THRESHOLD:
             print("INFO: Distance within threshold")
             msg = pose_xyt_t()
@@ -176,8 +199,8 @@ def pose_handler(channel, data):
 # Initialize the simulation environment
 pursuer_initial_position = Vector2D(0, 0)
 evader_initial_position = Vector2D(10, 10)
-pursuer_speed = 1.0
-evader_speed = 1.0
+pursuer_speed = 0.3
+evader_speed = 0.3
 
 lower_bounds : Vector2D = Vector2D(0, 0)
 upper_bounds : Vector2D = Vector2D(10, 10)
@@ -197,7 +220,11 @@ continue_pursuit = True
 while (len(pursuit_agent.pursuer_position_memory) < 2):
     lc.handle_timeout(1)
 
-    if not cam_1_detect and not cam_2_detect and not cam_3_detect:
+    current_time = int(time.time())
+    cam_1_dt = current_time - cam_1_last_detection
+    cam_2_dt = current_time - cam_2_last_detection
+    cam_3_dt = current_time - cam_3_last_detection
+    if not cam_1_detect and not cam_2_detect and not cam_3_detect and (cam_1_dt > cam_dt_threshold) and (cam_2_dt > cam_dt_threshold) and (cam_3_dt > cam_dt_threshold):
         print("INFO: STARTUP: No detection on any cameras - executing turn")
         msg = pose_xyt_t()
         msg.x = -1
@@ -205,10 +232,12 @@ while (len(pursuit_agent.pursuer_position_memory) < 2):
         msg.theta = -1
         msg.utime = 0
         lc.publish("TURN_TO_SOURCE", msg.encode())
-    else:
+    elif (cam_1_detect or cam_2_detect or cam_3_detect):
         print("INFO: Initial waypoints %i", len(pursuit_agent.pursuer_position_memory))
         print(Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
         pursuit_agent.populate_initial_memory(Vector2D(current_x, current_y), Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
+    else:
+        print("WARNING: INIT: Camera timeout in progress. Current camera dt is at ", np.min([cam_1_dt, cam_2_dt, cam_3_dt]), " seconds")
 
     time.sleep(1)
 
@@ -216,7 +245,11 @@ while (len(pursuit_agent.pursuer_position_memory) < 2):
 while continue_pursuit:
     lc.handle_timeout(1)
 
-    if not cam_1_detect and not cam_2_detect and not cam_3_detect:
+    current_time = int(time.time())
+    cam_1_dt = current_time - cam_1_last_detection
+    cam_2_dt = current_time - cam_2_last_detection
+    cam_3_dt = current_time - cam_3_last_detection
+    if not cam_1_detect and not cam_2_detect and not cam_3_detect and (cam_1_dt > cam_dt_threshold) and (cam_2_dt > cam_dt_threshold) and (cam_3_dt > cam_dt_threshold):
         print("INFO: No detection on any cameras - executing turn")
         msg = pose_xyt_t()
         msg.x = -1
@@ -235,6 +268,9 @@ while continue_pursuit:
         print("Evader position: ", Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
         print("Desired pursuer position: ", next_waypoint_pursuer)
         lc.publish("PE_WAYPOINT", msg.encode())
+
+    if not cam_1_detect and not cam_2_detect and not cam_3_detect:
+        print("WARNING: MAIN: Camera timeout in progress. Current camera dt is at ", np.min([cam_1_dt, cam_2_dt, cam_3_dt]), " seconds")
     time.sleep(1)
 
 print("Ending pursuit")        
