@@ -139,7 +139,7 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
 
                     # TODO: camera angle adjustments based on ground heading of camera
 
-                    lcm.publish("CAMERA_1_CHANNEL", msg.encode()) # TODO : Handle off command in algo after receiving distance?
+                    lcm.publish("CAMERA_1_CHANNEL", msg.encode())
 
                     if distance < threshold:
                         msg = pose_xyt_t()
@@ -152,9 +152,10 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
                         print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
 
                         if (play_sound):
-                            play_wav('4khz.wav')   # replace with actual end condition sound
+                            play_wav('3khz.wav')   # replace with actual end condition sound
 
-                time.sleep(3)       
+                time.sleep(3)
+            
             else:
                     msg = pose_xyt_t()
 
@@ -178,14 +179,14 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("-c", "--camera", type=int, default=1)
-    parser.add_argument("-o", "--output", type=bool, default=False)
-    parser.add_argument("-d", "--display", type=bool, default=False)
-    parser.add_argument("-s", "--sound", type=bool, default=False)
+    parser.add_argument("-o", "--output", type=int, default=0)
+    parser.add_argument("-d", "--display", type=int, default=1)
+    parser.add_argument("-s", "--sound", type=int, default=0)
 
     args = parser.parse_args()
     cam = [args.camera]
-    output = args.output
-    disp = args.display
-    sound = args.sound
+    output = (args.output == 1)
+    disp = (args.display == 1)
+    sound = (args.sound == 1)
 
     apriltag_video(input_streams=cam, output_stream=output, display_stream=disp, play_sound=sound)
