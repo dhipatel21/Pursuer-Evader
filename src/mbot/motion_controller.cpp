@@ -386,6 +386,7 @@ int main(int argc, char** argv)
                 else {
                     mbot_motor_command_t cmd_stop {controller.now(), 0.0, 0.0};
                     lcmInstance.publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd_stop);
+                    std::cout << "ALERT: STOP MESSAGE RECEIVED" << std::endl;
                 }
             	
     	}

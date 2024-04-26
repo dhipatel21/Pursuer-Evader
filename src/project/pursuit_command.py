@@ -22,7 +22,7 @@ global continue_pursuit
 continue_pursuit = True
 
 global cam_dt_threshold
-cam_dt_threshold = 10
+cam_dt_threshold = 3
 
 global cam_1_detect
 global cam_1_last_detection
