@@ -11,7 +11,7 @@ import sys
 from lcm import LCM
 from lcmtypes import mbot_motor_command_t, pose_xyt_t
 
-THRESHOLD = 2600
+THRESHOLD = 3500
 
 global continue_evasion
 continue_evasion = True
@@ -43,6 +43,7 @@ def evasion_handler(channel, data):
         lc.publish("PE_SHUTDOWN", msg.encode())
         continue_evasion = False
         lc.unsubscribe(subscription_mic)
+        sys.exit()
 
 def pose_handler(channel, data):
     global current_x
@@ -73,10 +74,10 @@ subscription_mic = lc.subscribe("BAD_MICROPHONE_CHANNEL", evasion_handler)
 subscription_pose = lc.subscribe("SLAM_POSE", pose_handler)
 
 continue_evasion = True
-while (received_state == False):
-    lc.handle_timeout(100)
-    print("ERROR: Awaiting SLAM pose")
-    time.sleep(1)
+# while (received_state == False):
+#     lc.handle_timeout(100)
+#     print("ERROR: Awaiting SLAM pose")
+#     time.sleep(1)
 
 while continue_evasion:
     lc.handle_timeout(1)
