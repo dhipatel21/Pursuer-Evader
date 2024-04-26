@@ -125,7 +125,8 @@ while (len(pursuit_agent.pursuer_position_memory) < 2):
 
     current_time = int(time.time())
     cam_1_dt = current_time - cam_1_last_detection
-    if not cam_1_detect and (cam_1_dt > cam_dt_threshold):
+    # if not cam_1_detect and (cam_1_dt > cam_dt_threshold):
+    if not cam_1_detect:
         print("INFO: STARTUP: No detection on any cameras - executing turn")
         msg = pose_xyt_t()
         msg.x = -1
@@ -148,7 +149,8 @@ while continue_pursuit:
 
     current_time = int(time.time())
     cam_1_dt = current_time - cam_1_last_detection
-    if not cam_1_detect and (cam_1_dt > cam_dt_threshold):
+    # if not cam_1_detect and (cam_1_dt > cam_dt_threshold):
+    if not cam_1_detect:
         print("INFO: No detection on any cameras - executing turn")
         msg = pose_xyt_t()
         msg.x = -1
