@@ -351,7 +351,7 @@ int8_t Pursuit::executePursuit(bool initialize)
         std::cout << "INFO: Turning until camera located" << std::endl;
         pose_xyt_t turn;
         turn = currentPose_;
-        turn.theta += 0.5;
+        turn.theta += 0.1;
 
         robot_path_t turn_path;
         turn_path.path.push_back(turn);

@@ -52,34 +52,40 @@ current_x = 0
 global current_y
 current_y = 0
 
+global current_theta
+current_theta = 0
+
 global evader_distance
 evader_distance = 0
 
-def play_wav(file_path):
-    # Open the WAV file
-    wf = wave.open(file_path, 'rb')
+# def play_wav(file_path):
+#     # Open the WAV file
+#     wf = wave.open(file_path, 'rb')
 
-    # Initialize PyAudio
-    p = pyaudio.PyAudio()
+#     # Initialize PyAudio
+#     p = pyaudio.PyAudio()
 
-    # Open a stream for playback
-    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-                    channels=wf.getnchannels(),
-                    rate=wf.getframerate(),
-                    output=True)
+#     # Open a stream for playback
+#     stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+#                     channels=wf.getnchannels(),
+#                     rate=wf.getframerate(),
+#                     output=True)
 
-    # Read data from the WAV file and play it
-    data = wf.readframes(1024)
-    while data:
-        stream.write(data)
-        data = wf.readframes(1024)
+#     # Read data from the WAV file and play it
+#     data = wf.readframes(8)
+#     while data:
+#         stream.write(data)
+#         data = wf.readframes(8)
+#         time.sleep(1)
 
-    # Stop and close the stream
-    stream.stop_stream()
-    stream.close()
+#     time.sleep(3)
 
-    # Terminate PyAudio
-    p.terminate()
+#     # Stop and close the stream
+#     stream.stop_stream()
+#     stream.close()
+
+#     # Terminate PyAudio
+#     p.terminate()
 
 def camera_1_handler(channel, data):
     global continue_pursuit
@@ -93,6 +99,8 @@ def camera_1_handler(channel, data):
 
     evader_direction = cam_msg.theta + CAM_1_OFFSET
     evader_distance = cam_msg.x
+
+    print("INFO: Evader distance: ", evader_distance)
 
     current_time = int(time.time())
 
@@ -111,8 +119,6 @@ def camera_1_handler(channel, data):
             msg.utime = 1
 
             lc.publish("PE_SHUTDOWN", msg.encode())
-            # play_wav("3khz.wav")
-            continue_pursuit = False
             lc.unsubscribe(subscription_cam_1)
     
 def camera_2_handler(channel, data):
@@ -136,6 +142,9 @@ def camera_2_handler(channel, data):
         cam_2_detect = True
         cam_2_last_detection = current_time
         if evader_distance < THRESHOLD:
+            lc.unsubscribe("GOOD_MICROPHONE_CHANNEL")
+            lc.unsubscribe("SLAM_POSE") 
+
             print("INFO: Distance within threshold")
             msg = pose_xyt_t()
             msg.x = 1
@@ -177,9 +186,11 @@ def camera_3_handler(channel, data):
             msg.utime = 1
 
             lc.publish("PE_SHUTDOWN", msg.encode())
+            
             # play_wav("3khz.wav")
             continue_pursuit = False
-            lc.unsubscribe(subscription_cam_3)
+            
+    
 
 def good_mic_handler(channel, data):
     global continue_pursuit
@@ -191,9 +202,11 @@ def good_mic_handler(channel, data):
 def pose_handler(channel, data):
     global current_x
     global current_y
+    global current_theta
     current_pose = pose_xyt_t.decode(data)
     current_x = current_pose.x
     current_y = current_pose.y
+    current_theta = current_pose.theta
 
 
 # Initialize the simulation environment
@@ -210,8 +223,6 @@ pursuit_agent = Pursuit(pursuer_initial_position, pursuer_speed, evader_initial_
 # Begin
 # subscription_cam = lc.subscribe("CAMERA_CHANNEL", camera_handler)
 subscription_cam_1 = lc.subscribe("CAMERA_1_CHANNEL", camera_1_handler)
-subscription_cam_2 = lc.subscribe("CAMERA_2_CHANNEL", camera_2_handler)
-subscription_cam_3 = lc.subscribe("CAMERA_3_CHANNEL", camera_3_handler)
 subscription_good_mic = lc.subscribe("GOOD_MICROPHONE_CHANNEL", good_mic_handler)
 subscription_pose = lc.subscribe("SLAM_POSE", pose_handler)
 
@@ -263,7 +274,7 @@ while continue_pursuit:
         msg.x = next_waypoint_pursuer.x
         msg.y = next_waypoint_pursuer.y
         msg.theta = 0
-        msg.utime = 0
+        msg.utime = 10
 
         print("Evader position: ", Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
         print("Desired pursuer position: ", next_waypoint_pursuer)
@@ -272,6 +283,7 @@ while continue_pursuit:
     if not cam_1_detect and not cam_2_detect and not cam_3_detect:
         print("WARNING: MAIN: Camera timeout in progress. Current camera dt is at ", np.min([cam_1_dt, cam_2_dt, cam_3_dt]), " seconds")
     time.sleep(1)
+    time.sleep(0.1)
 
 print("Ending pursuit")        
 # except KeyboardInterrupt:
