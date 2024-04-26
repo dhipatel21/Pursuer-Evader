@@ -7,11 +7,10 @@ import apriltag
 import numpy as np
 import subprocess
 import sys
-
 import time
 
 import lcm
-from lcmtypes import mbot_motor_command_t, pose_xyt_t
+from lcmtypes import pose_xyt_t
 from lcm import LCM
 
 ################################################################################
@@ -62,7 +61,7 @@ def cam_angles(i, poses):
     angle = np.arctan2(tx, tz)
     return angle
 
-def apriltag_video(input_streams=[2], # For default cam use -> [0]
+def apriltag_video(input_streams=[1], # For default cam use -> [0]
                    output_stream=False,
                    display_stream=False,
                    detection_window_name='AprilTag',
@@ -132,15 +131,15 @@ def apriltag_video(input_streams=[2], # For default cam use -> [0]
 
                     # Message Handling
                     msg = pose_xyt_t()
-                    
+
                     msg.utime = int(time.time())
                     msg.x = distance
                     msg.theta = angle
-                    msg.y = 2
+                    msg.y = 1
 
                     # TODO: camera angle adjustments based on ground heading of camera
 
-                    lcm.publish("CAMERA_2_CHANNEL", msg.encode()) # TODO : Handle off command in algo after receiving distance?
+                    lcm.publish("CAMERA_1_CHANNEL", msg.encode())
 
                     if distance < threshold:
                         msg = pose_xyt_t()
@@ -151,11 +150,12 @@ def apriltag_video(input_streams=[2], # For default cam use -> [0]
 
                         lcm.publish("SHUTDOWN_CHANNEL", msg.encode())
                         print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
+
                         if (play_sound):
                             play_wav('3khz.wav')   # replace with actual end condition sound
-                
-                time.sleep(3)
 
+                time.sleep(3)
+            
             else:
                     msg = pose_xyt_t()
 
@@ -164,7 +164,7 @@ def apriltag_video(input_streams=[2], # For default cam use -> [0]
                     msg.theta = 0
                     msg.y = -1
 
-                    lcm.publish("CAMERA_2_CHANNEL", msg.encode())
+                    lcm.publish("CAMERA_1_CHANNEL", msg.encode())
 
             if output_stream:
                 output.write(overlay)
@@ -179,14 +179,14 @@ def apriltag_video(input_streams=[2], # For default cam use -> [0]
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("-c", "--camera", type=int, default=2)
-    parser.add_argument("-o", "--output", type=bool, default=False)
-    parser.add_argument("-d", "--display", type=bool, default=False)
-    parser.add_argument("-s", "--sound", type=bool, default=False)
+    parser.add_argument("-o", "--output", type=int, default=0)
+    parser.add_argument("-d", "--display", type=int, default=1)
+    parser.add_argument("-s", "--sound", type=int, default=0)
 
     args = parser.parse_args()
     cam = [args.camera]
-    output = args.output
-    disp = args.display
-    sound = args.sound
+    output = (args.output == 1)
+    disp = (args.display == 1)
+    sound = (args.sound == 1)
 
-    apriltag_video()
+    apriltag_video(input_streams=cam, output_stream=output, display_stream=disp, play_sound=sound)
