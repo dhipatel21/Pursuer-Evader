@@ -114,18 +114,20 @@ class Pursuit:
         # Return the moving average as a new Vector2D object
         return Vector2D(avg_x, avg_y)
 
-    def update_pursuer_stern_chase(self, evader_direction, prediction_time=1.0):
+    def update_pursuer_stern_chase(self, pursuer_position, evader_direction, prediction_time=1.0):
         """
         Predict the future position of the evader and move the pursuer toward that position.
         `evader_direction` should be a normalized Vector2D (unit vector).
         `prediction_time` is the amount of time into the future the prediction should be considered.
         """        
+        self.update_positions(evader_direction, pursuer_position)
+        future_evader_position = self.pursuer_position + evader_direction * prediction_time
         
-        self.pursuer_position = self.pursuer_position + evader_direction * prediction_time
-        self.pursuer_position.saturate(self.upper_bounds, self.lower_bounds)
-
+        print(future_evader_position.magnitude())
+        future_evader_position.saturate(self.upper_bounds, self.lower_bounds)
+        
         # Return the pursuer's next waypoint
-        return self.pursuer_position
+        return future_evader_position
     
     def update_pursuer_smooth_chase(self, evader_direction, prediction_time=1.0):
         """

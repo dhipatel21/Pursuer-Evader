@@ -39,7 +39,7 @@ def audio_callback(indata, frames, time, status):
 # Main function
 def main():
     # Find the index of the USB microphone
-    mic_index = 1
+    mic_index = 0
     # print(sd.query_devices())     # use to find mic index
     # Start audio input stream
     with sd.InputStream(device=mic_index, channels=1, samplerate=RATE,
