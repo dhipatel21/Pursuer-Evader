@@ -10,6 +10,7 @@
 #include <common/pose_trace.hpp>
 #include <common/lcm_config.h>
 #include <slam/slam_channels.h>
+#include <planning/pe_channels.h>
 #include <lcm/lcm-cpp.hpp>
 #include <algorithm>
 #include <iostream>
@@ -26,6 +27,8 @@ private:
     float fwd_last_error = 0;
     float turn_sum_error = 0;
     float turn_last_error = 0;
+
+    
     /*************************************************************
     * TODO:
     *  - Week 4: Secion 3.2
@@ -146,6 +149,8 @@ public:
     /**
     * Constructor for MotionController.
     */
+   bool stop_msg_received = false;
+
     MotionController(lcm::LCM * instance)
     :
         lcmInstance(instance),
@@ -263,6 +268,16 @@ public:
     {
         computeOdometryOffset(*pose);
     }
+
+    void handleShutdown(const lcm::ReceiveBuffer* buf, const std::string& channel, const pose_xyt_t* pose)
+    {
+        stop_msg_received = true;
+    }
+
+    int64_t now()
+    {
+	    return utime_now() + time_offset;
+    }
     
 private:
     
@@ -286,11 +301,6 @@ private:
  
     TurnManeuverController turn_controller;
     StraightManeuverController straight_controller;
-
-    int64_t now()
-    {
-	    return utime_now() + time_offset;
-    }
     
     bool assignNextTarget(void)
     {
@@ -332,6 +342,7 @@ private:
         lcmInstance->subscribe(SLAM_POSE_CHANNEL, &MotionController::handlePose, this);
         lcmInstance->subscribe(CONTROLLER_PATH_CHANNEL, &MotionController::handlePath, this);
         lcmInstance->subscribe(MBOT_TIMESYNC_CHANNEL, &MotionController::handleTimesync, this);
+        lcmInstance->subscribe(PE_SHUTDOWN_CHANNEL, &MotionController::handleShutdown, this);
     }
 };
 
@@ -369,7 +380,14 @@ int main(int argc, char** argv)
                 * End of TODO
                 *************************************************************/
 
-            	lcmInstance.publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
+                if (!controller.stop_msg_received) {
+                    lcmInstance.publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
+                }
+                else {
+                    mbot_motor_command_t cmd_stop {controller.now(), 0.0, 0.0};
+                    lcmInstance.publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd_stop);
+                }
+            	
     	}
     }
     

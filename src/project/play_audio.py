@@ -27,4 +27,4 @@ def play_wav(file_path):
     # Terminate PyAudio
     p.terminate()
 
-play_wav("project/4khz.wav")
+play_wav("4khz.wav")

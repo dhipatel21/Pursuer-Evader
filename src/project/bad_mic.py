@@ -40,8 +40,16 @@ def audio_callback(indata, frames, time, status):
 # Main function
 def main():
     # Find the index of the USB microphone
-    mic_index = 2
+    mic_index = -1
     # print(sd.query_devices())     # use to find mic index
+    for i in range(len(sd.query_devices())):
+        str = "USB PnP Sound Device: Audio (hw:0,0)"
+        if (sd.query_devices()[i]["name"] == str):
+                mic_index = i
+                break
+    
+    if mic_index == -1:
+        exit(1)
     # Start audio input stream
     with sd.InputStream(device=mic_index, channels=1, samplerate=RATE,
                          blocksize=BLOCK_SIZE, callback=audio_callback):
