@@ -44,8 +44,6 @@ Pursuit::Pursuit(int32_t teamNumber,
     lcmInstance_->subscribe(TURN_TO_SOURCE_CHANNEL, &Pursuit::handleTurnToSource, this);
 
     lcmInstance_->subscribe(CAMERA_1_CHANNEL, &Pursuit::handleCamera, this);
-    lcmInstance_->subscribe(CAMERA_2_CHANNEL, &Pursuit::handleCamera, this);
-    lcmInstance_->subscribe(CAMERA_3_CHANNEL, &Pursuit::handleCamera, this);
     
     // Send an initial message indicating that the exploration module is initializing. Once the first map and pose are
     // received, then it will change to the exploring map state.

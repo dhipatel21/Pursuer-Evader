@@ -58,35 +58,6 @@ current_theta = 0
 global evader_distance
 evader_distance = 0
 
-# def play_wav(file_path):
-#     # Open the WAV file
-#     wf = wave.open(file_path, 'rb')
-
-#     # Initialize PyAudio
-#     p = pyaudio.PyAudio()
-
-#     # Open a stream for playback
-#     stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-#                     channels=wf.getnchannels(),
-#                     rate=wf.getframerate(),
-#                     output=True)
-
-#     # Read data from the WAV file and play it
-#     data = wf.readframes(8)
-#     while data:
-#         stream.write(data)
-#         data = wf.readframes(8)
-#         time.sleep(1)
-
-#     time.sleep(3)
-
-#     # Stop and close the stream
-#     stream.stop_stream()
-#     stream.close()
-
-#     # Terminate PyAudio
-#     p.terminate()
-
 def camera_1_handler(channel, data):
     global continue_pursuit
     global evader_distance
@@ -120,77 +91,6 @@ def camera_1_handler(channel, data):
 
             lc.publish("PE_SHUTDOWN", msg.encode())
             lc.unsubscribe(subscription_cam_1)
-    
-def camera_2_handler(channel, data):
-    global continue_pursuit
-    global evader_direction
-    global evader_distance
-    global cam_2_detect
-    global cam_2_last_detection
-
-    cam_msg = pose_xyt_t.decode(data)
-
-    evader_direction = cam_msg.theta + CAM_2_OFFSET
-    evader_distance = cam_msg.x
-
-    current_time = int(time.time())
-
-    if (cam_msg.y == -1):
-        cam_2_detect = False
-        print("No detection on cam 2")
-    else:
-        cam_2_detect = True
-        cam_2_last_detection = current_time
-        if evader_distance < THRESHOLD:
-            lc.unsubscribe("GOOD_MICROPHONE_CHANNEL")
-            lc.unsubscribe("SLAM_POSE") 
-
-            print("INFO: Distance within threshold")
-            msg = pose_xyt_t()
-            msg.x = 1
-            msg.y = 1
-            msg.theta = 1
-            msg.utime = 1
-
-            lc.publish("PE_SHUTDOWN", msg.encode())
-            continue_pursuit = False
-            # play_wav("3khz.wav")
-            lc.unsubscribe(subscription_cam_2)
-    
-def camera_3_handler(channel, data):
-    global continue_pursuit
-    global evader_direction
-    global evader_distance
-    global cam_3_detect
-    global cam_3_last_detection
-
-    cam_msg = pose_xyt_t.decode(data)
-
-    evader_direction = cam_msg.theta + CAM_3_OFFSET
-    evader_distance = cam_msg.x
-
-    current_time = int(time.time())
-
-    if cam_msg.y == -1:
-        cam_3_detect = False
-        print("No detection on cam 3")
-    else:
-        cam_3_detect = True
-        cam_3_last_detection = current_time
-        if evader_distance < THRESHOLD:
-            print("INFO: Distance within threshold")
-            msg = pose_xyt_t()
-            msg.x = 1
-            msg.y = 1
-            msg.theta = 1
-            msg.utime = 1
-
-            lc.publish("PE_SHUTDOWN", msg.encode())
-            
-            # play_wav("3khz.wav")
-            continue_pursuit = False
-            
-    
 
 def good_mic_handler(channel, data):
     global continue_pursuit
