@@ -118,7 +118,6 @@ void Evade::handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& cha
     currentTarget_.y = request->y;
 }
 
-// 
 void Evade::handleShutdown(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const exploration_status_t* request)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);
@@ -166,7 +165,7 @@ void Evade::copyDataForUpdate(void)
         homePose_ = incomingPose_;
         haveHomePose_ = true;
         std::cout << "INFO: Evade: Set home pose:" << homePose_.x << ',' << homePose_.y << ',' 
-            << homePose_.theta << '\n';
+            << homePose_.theta  << std::endl;
     }
 }
 
@@ -208,13 +207,13 @@ void Evade::executeStateMachine(void)
     //if path confirmation was not received, resend path
     if(!pathReceived_)
     {
-        std::cout << "INFO: Evade: The current path was not received by motion_controller, attempting to send again:\n";
+        std::cout << "INFO: Evade: The current path was not received by motion_controller, attempting to send again:"  << std::endl;
 
-        std::cout << "timestamp: " << currentPath_.utime << "\n";
+        std::cout << "timestamp: " << currentPath_.utime  << std::endl;
 
         for(auto pose : currentPath_.path){
-            std::cout << "(" << pose.x << "," << pose.y << "," << pose.theta << "); ";
-        }std::cout << "\n";
+            std::cout << "(" << pose.x << "," << pose.y << "," << pose.theta << "); " << std::endl;
+        }
 
         lcmInstance_->publish(CONTROLLER_PATH_CHANNEL, &currentPath_);
     }
@@ -223,13 +222,13 @@ void Evade::executeStateMachine(void)
     if(previousPath.path != currentPath_.path)
     { 
 
-        std::cout << "INFO: Evade: A new path was created on this iteration. Sending to Mbot:\n";
+        std::cout << "INFO: Evade: A new path was created on this iteration. Sending to Mbot:" << std::endl;
 
-        std::cout << "path timestamp: " << currentPath_.utime << "\npath: ";
+        std::cout << "path timestamp: " << currentPath_.utime << "\npath: " << std::endl;
 
         for(auto pose : currentPath_.path){
-            std::cout << "(" << pose.x << "," << pose.y << "," << pose.theta << "); ";
-        }std::cout << "\n";
+            std::cout << "(" << pose.x << "," << pose.y << "," << pose.theta << "); " << std::endl;
+        }
 
         lcmInstance_->publish(CONTROLLER_PATH_CHANNEL, &currentPath_);
 
@@ -275,7 +274,7 @@ int8_t Evade::executeEvade(bool initialize)
             && planner_.isValidGoal(currentTarget_))            // planned pose is within acceptable radius of obstacle
         {
             std::cout << "INFO: Valid goal found, begin planing" << std::endl;
-            std::cout << currentTarget_.x << " " << currentTarget_.y << "\n";
+            std::cout << currentTarget_.x << " " << currentTarget_.y  << std::endl;
             currentPath_ = planner_.planPath(currentPose_, currentTarget_);
         }
         else {
@@ -283,19 +282,19 @@ int8_t Evade::executeEvade(bool initialize)
             pose_xyt_t newPose (currentPose_);
             float radius = 0.02;
             while (radius < 1){
-                std::cout << "radius: " << radius << "\n";
+                std::cout << "radius: " << radius  << std::endl;
                 for (float angle = 0; angle < 2*M_PI; angle += (M_PI / 8.0)){
 
                     float dx = radius * cos(angle);
                     float dy = radius * sin(angle);
-                    std::cout << dx << " " << dy << "\n";
+                    std::cout << dx << " " << dy  << std::endl;
                     Point<double> coordinate (currentTarget_.x + dx, currentTarget_.y + dy);
                     cell_t cell = global_position_to_grid_cell(coordinate, currentMap_);
                     
                     newPose.x = coordinate.x;
                     newPose.y = coordinate.y;
                     
-                    std::cout << newPose.x << " " << newPose.y << "\n";
+                    std::cout << newPose.x << " " << newPose.y  << std::endl;
                     robot_path_t plannedPath;
 
                     if(currentMap_.isCellInGrid(cell.x, cell.y)             // cell is in the grid
@@ -330,7 +329,7 @@ int8_t Evade::executeEvade(bool initialize)
     // If time has expired, we win
     if (dt > TRIAL_TIME)
     {
-        std::cout << "INFO: TIME IS UP; EVADER WINS " << "\n";
+        std::cout << "INFO: TIME IS UP; EVADER WINS "  << std::endl;
         status.status = exploration_status_t::STATUS_COMPLETE;
     }
     // Else we should keep running (we let the shutdown handler tell us we lose)
@@ -358,7 +357,7 @@ int8_t Evade::executeEvade(bool initialize)
             return exploration_status_t::STATE_FAILED_EXPLORATION;
 
         default:
-            std::cerr << "ERROR: Evade::executeEvade: Set an invalid exploration status. Evasion failed!";
+            std::cerr << "ERROR: Evade::executeEvade: Set an invalid exploration status. Evasion failed!" << std::endl;
             return exploration_status_t::STATE_FAILED_EXPLORATION;
     }
 }
