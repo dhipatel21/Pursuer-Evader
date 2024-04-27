@@ -307,7 +307,8 @@ int8_t Pursuit::executePursuit(bool initialize)
 
     if (!keep_turning && (currentTarget_.utime != 0)) {
         std::cout << "INFO: Begin planning consideration" << std::endl;
-        if ((initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1))
+        int64_t time_dt = utime_now() - most_recent_path_time;
+        if ((initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1 || time_dt > 5000000))
         {
             if(currentMap_.isCellInGrid(currentTarget_.x, currentTarget_.y) // cell is in the grid
                 && currentMap_.logOdds(currentTarget_.x, currentTarget_.y) < 0  // cell is unoccupied by an obstacle
@@ -410,17 +411,23 @@ int8_t Pursuit::executePursuit(bool initialize)
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
     
     ////////////////////////////   Determine the next state    ////////////////////////
-    if (status.status == exploration_status_t::STATUS_IN_PROGRESS)
+    switch(status.status)
     {
-        return exploration_status_t::STATE_RETURNING_HOME;
-    }
-    if (status.status == exploration_status_t::STATUS_COMPLETE)
-    {
-        return exploration_status_t::STATE_COMPLETED_EXPLORATION;
-    }
-    else // if(status.status == exploration_status_t::STATUS_FAILED)
-    {
-        return exploration_status_t::STATE_FAILED_EXPLORATION;
+        // Don't change states if we're still a work-in-progress
+        case exploration_status_t::STATUS_IN_PROGRESS:
+            return exploration_status_t::STATE_EXPLORING_MAP;
+            
+        // If exploration is completed, then head home
+        case exploration_status_t::STATUS_COMPLETE:
+            return exploration_status_t::STATE_RETURNING_HOME;
+            
+        // If something has gone wrong and we can't reach all frontiers, then fail the exploration.
+        case exploration_status_t::STATUS_FAILED:
+            return exploration_status_t::STATE_FAILED_EXPLORATION;
+            
+        default:
+            std::cerr << "ERROR: Exploration::executeExploringMap: Set an invalid exploration status. Exploration failed!";
+            return exploration_status_t::STATE_FAILED_EXPLORATION;
     }
 }
 
