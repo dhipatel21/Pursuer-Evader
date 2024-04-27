@@ -31,6 +31,7 @@ Pursuit::Pursuit(int32_t teamNumber,
 , haveHomePose_(false)
 , lcmInstance_(lcmInstance)
 , pathReceived_(false)
+, shutdown_(false)
 {
     assert(lcmInstance_);   // confirm a nullptr wasn't passed in
 
@@ -42,7 +43,7 @@ Pursuit::Pursuit(int32_t teamNumber,
     lcmInstance_->subscribe(PE_REQUEST_CHANNEL, &Pursuit::handleRequest, this);
     lcmInstance_->subscribe(GOOD_MICROPHONE_CHANNEL, &Pursuit::handleGoodMicrophone, this);
     lcmInstance_->subscribe(TURN_TO_SOURCE_CHANNEL, &Pursuit::handleTurnToSource, this);
-
+    lcmInstance_->subscribe(PE_SHUTDOWN_CHANNEL, &Pursuit::handleShutdown, this);
     lcmInstance_->subscribe(CAMERA_1_CHANNEL, &Pursuit::handleCamera, this);
     
     // Send an initial message indicating that the exploration module is initializing. Once the first map and pose are
@@ -134,15 +135,19 @@ void Pursuit::handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& c
 void Pursuit::handleGoodMicrophone(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* mic_info)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);
-    evaderInfo_.theta = mic_info->theta;
-    evaderInfo_.utime = mic_info->utime;
+    if (MIC_MODE == 1) {
+        evaderInfo_.theta = mic_info->theta;
+        evaderInfo_.utime = mic_info->utime;
+    }   
 }
 
 void Pursuit::handleCamera(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* camera_info)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);
     if (camera_info->y != -1) {
-        evaderInfo_.theta = camera_info->theta;
+        if (MIC_MODE == 0) {
+            evaderInfo_.theta = camera_info->theta;
+        }
         evaderInfo_.utime = camera_info->utime;
         evaderInfo_.x = camera_info->x;
         keep_turning = false;
@@ -154,6 +159,13 @@ void Pursuit::handleTurnToSource(const lcm::ReceiveBuffer* rbuf, const std::stri
     std::cout << "INFO: Turning request received" << std::endl;
     std::lock_guard<std::mutex> autoLock(dataLock_);
     keep_turning = true;
+}
+
+void Pursuit::handleShutdown(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* evader_info)
+{
+    std::lock_guard<std::mutex> autoLock(dataLock_);
+    evaderInfo_.x = evader_info->x;
+    shutdown_ = true;
 }
 
 bool Pursuit::isReadyToUpdate(void)
@@ -299,7 +311,8 @@ int8_t Pursuit::executePursuit(bool initialize)
 
     if (!keep_turning && (currentTarget_.utime != 0)) {
         std::cout << "INFO: Begin planning consideration" << std::endl;
-        if ((initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1))
+        int64_t time_dt = utime_now() - most_recent_path_time;
+        if ((initialize || !planner_.isPathSafe(currentPath_) || goalDist < 2*currentMap_.metersPerCell() || currentPath_.path_length <= 1 || time_dt > 5000000))
         {
             if(currentMap_.isCellInGrid(currentTarget_.x, currentTarget_.y) // cell is in the grid
                 && currentMap_.logOdds(currentTarget_.x, currentTarget_.y) < 0  // cell is unoccupied by an obstacle
@@ -349,7 +362,7 @@ int8_t Pursuit::executePursuit(bool initialize)
         std::cout << "INFO: Turning until camera located" << std::endl;
         pose_xyt_t turn;
         turn = currentPose_;
-        turn.theta += 0.1;
+        turn.theta += 0.3;
 
         robot_path_t turn_path;
         turn_path.path.push_back(turn);
@@ -381,7 +394,7 @@ int8_t Pursuit::executePursuit(bool initialize)
 
 
     // If the evader is in range, we win
-    if(evaderInfo_.x < CAPTURE_RADIUS)
+    if(evaderInfo_.x < CAPTURE_RADIUS || shutdown_)
     {
         std::cout << "INFO: EVADER CAPUTRED " << "\n";
         status.status = exploration_status_t::STATUS_COMPLETE;
@@ -435,8 +448,8 @@ int8_t Pursuit::executeCompleted(bool initialize)
 
     // TODO end behavior
     // concludePursuit(true);
-    mbot_motor_command_t cmd = {0, 0, 0};
-    lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
+    // mbot_motor_command_t cmd = {0, 0, 0};
+    // lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
     return exploration_status_t::STATE_COMPLETED_EXPLORATION;
 }
 
@@ -453,7 +466,7 @@ int8_t Pursuit::executeFailed(bool initialize)
 
     // TODO end behavior
     // concludePursuit(false);
-    mbot_motor_command_t cmd = {0, 0, 0};
-    lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
+    // mbot_motor_command_t cmd = {0, 0, 0};
+    // lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
     return exploration_status_t::STATE_FAILED_EXPLORATION;
 }

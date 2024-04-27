@@ -7,20 +7,42 @@ import apriltag
 import numpy as np
 import subprocess
 import sys
-import time
 
 import lcm
-from lcmtypes import pose_xyt_t
+from lcmtypes import mbot_motor_command_t, pose_xyt_t
 from lcm import LCM
 
 ################################################################################
 threshold = 0.4  # TODO: Adjust based on testing
-play_audio = 0
 
-global last_msg
-last_msg = None
+import wave
+import pyaudio
 
-import subprocess
+def play_wav(file_path):
+    # Open the WAV file
+    wf = wave.open(file_path, 'rb')
+
+    # Initialize PyAudio
+    p = pyaudio.PyAudio()
+
+    # Open a stream for playback
+    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                    channels=wf.getnchannels(),
+                    rate=wf.getframerate(),
+                    output=True)
+
+    # Read data from the WAV file and play it
+    data = wf.readframes(1024)
+    while data:
+        stream.write(data)
+        data = wf.readframes(1024)
+
+    # Stop and close the stream
+    stream.stop_stream()
+    stream.close()
+
+    # Terminate PyAudio
+    p.terminate()
 
 def calculate_distance(i, poses):
     tx = poses[i][0][0][3]
@@ -38,11 +60,10 @@ def cam_angles(i, poses):
     angle = np.arctan2(tx, tz)
     return angle
 
-def apriltag_video(input_streams=[1], # For default cam use -> [0]
+def apriltag_video(input_streams=[5], # For default cam use -> [0]
                    output_stream=False,
-                   display_stream=False,
+                   display_stream=True,
                    detection_window_name='AprilTag',
-                   play_sound=False
                   ):
 
     '''
@@ -57,8 +78,6 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
     parser = ArgumentParser(description='Detect AprilTags from video stream.')
     apriltag.add_arguments(parser)
     options = parser.parse_args()
-
-    global last_msg
 
     '''
     Set up a reasonable search path for the apriltag DLL.
@@ -105,44 +124,21 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
             if len(detections) > 0:
                 for i, detection in enumerate(detections):
                     distance = calculate_distance(i, poses)
-                    print("Distance to AprilTag ", detection.tag_id, ': ', distance)
+                    # print("Distance to AprilTag ", detection.tag_id, ': ', distance)
                     angle = cam_angles(i, poses)
-                    print("Angle to AprilTag ", detection.tag_id, ': ', angle)
 
                     # Message Handling
                     msg = pose_xyt_t()
-
-                    msg.utime = int(time.time())
                     msg.x = distance
                     msg.theta = angle
                     msg.y = 1
-                    
-                    last_msg = msg
-                    lcm.publish("CAMERA_1_CHANNEL", msg.encode())
 
-                    if distance < threshold:
-                        msg = pose_xyt_t()
-                        msg.x = 1
-                        msg.y = 1
-                        msg.theta = 1
-                        msg.utime = 1
-                        play_audio = 1
-                        lcm.publish("SHUTDOWN_CHANNEL", msg.encode())
-                        print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
+                    lcm.publish("cam", msg.encode()) # TODO : Handle off command in algo after receiving distance?
 
-                        subprocess.run(["aplay", "4khz.wav"])
-                        video.release()
-                        break
-            
-            else:
-                    msg = pose_xyt_t()
-
-                    msg.utime = int(time.time())
-                    msg.x = 0
-                    msg.theta = 0
-                    msg.y = -1
-
-                    lcm.publish("CAMERA_1_CHANNEL", msg.encode())
+                    # if distance < threshold:
+                    #     # TODO: send turn off command over LCM
+                    #     print("Threshold Reached! Distance to AprilTag ", detection.tag_id, ': ', distance)
+                    #     play_wav('3khz.wav')   # replace with actual end condition sound
 
             if output_stream:
                 output.write(overlay)
@@ -155,16 +151,4 @@ def apriltag_video(input_streams=[1], # For default cam use -> [0]
 ################################################################################
 
 if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument("-c", "--camera", type=int, default=1)
-    parser.add_argument("-o", "--output", type=int, default=0)
-    parser.add_argument("-d", "--display", type=int, default=1)
-    parser.add_argument("-s", "--sound", type=int, default=0)
-
-    args = parser.parse_args()
-    cam = [args.camera]
-    output = (args.output == 1)
-    disp = (args.display == 1)
-    sound = (args.sound == 1)
-
-    apriltag_video(input_streams=cam, output_stream=output, display_stream=disp, play_sound=sound)
+    apriltag_video()

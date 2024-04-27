@@ -121,7 +121,7 @@ class Pursuit:
         `prediction_time` is the amount of time into the future the prediction should be considered.
         """        
         self.update_positions(evader_direction, pursuer_position)
-        future_evader_position = self.pursuer_position + evader_direction * prediction_time
+        future_evader_position = self.pursuer_position + evader_direction * prediction_time * self.speed
         
         print(future_evader_position.magnitude())
         # future_evader_position.saturate(self.upper_bounds, self.lower_bounds)

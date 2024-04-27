@@ -12,6 +12,7 @@ from lcm import LCM
 from lcmtypes import mbot_motor_command_t, pose_xyt_t
 
 THRESHOLD = 0.4
+MIC_MODE = 1
 
 lc = LCM("udpm://239.255.76.67:7667?ttl=2")
 
@@ -61,7 +62,8 @@ def camera_1_handler(channel, data):
         cam_1_detect = False
         print("No detection on cam 1")
     else:
-        evader_direction = cam_msg.theta + CAM_1_OFFSET
+        if (MIC_MODE == 0):
+            evader_direction = cam_msg.theta + CAM_1_OFFSET
         evader_distance = cam_msg.x
 
         print("INFO: Evader distance: ", evader_distance)
@@ -88,7 +90,8 @@ def good_mic_handler(channel, data):
     global evader_direction
     mic_msg = pose_xyt_t.decode(data)
 
-    evader_direction = mic_msg.theta
+    if (MIC_MODE == 1):
+        evader_direction = mic_msg.theta
     
 def pose_handler(channel, data):
     global current_x
@@ -103,8 +106,8 @@ def pose_handler(channel, data):
 # Initialize the simulation environment
 pursuer_initial_position = Vector2D(0, 0)
 evader_initial_position = Vector2D(10, 10)
-pursuer_speed = 0.1
-evader_speed = 0.1
+pursuer_speed = 1
+evader_speed = 1
 
 lower_bounds : Vector2D = Vector2D(0, 0)
 upper_bounds : Vector2D = Vector2D(10, 10)
@@ -136,12 +139,12 @@ while (len(pursuit_agent.pursuer_position_memory) < 2):
         lc.publish("TURN_TO_SOURCE", msg.encode())
     elif (cam_1_detect):
         print("INFO: Initial waypoints %i", len(pursuit_agent.pursuer_position_memory))
-        print(Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
-        pursuit_agent.populate_initial_memory(Vector2D(current_x, current_y), Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
+        print(Vector2D(evader_distance * np.cos(evader_direction + current_theta), evader_distance * np.sin(evader_direction + current_theta)))
+        pursuit_agent.populate_initial_memory(Vector2D(current_x, current_y), Vector2D(evader_distance * np.cos(evader_direction + current_theta), evader_distance * np.sin(evader_direction + current_theta)))
     else:
         print("WARNING: INIT: Camera timeout in progress. Current camera dt is at ", cam_1_dt, " seconds")
 
-    time.sleep(4)
+    time.sleep(1)
 
 
 while continue_pursuit:
@@ -159,21 +162,21 @@ while continue_pursuit:
         msg.utime = 0
         lc.publish("TURN_TO_SOURCE", msg.encode())
     else:
-        next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(current_x, current_y), Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
+        next_waypoint_pursuer = pursuit_agent.update_pursuer_stern_chase(Vector2D(current_x, current_y), Vector2D(np.cos(evader_direction + current_theta), np.sin(evader_direction + current_theta)))
         msg = pose_xyt_t()
         msg.x = next_waypoint_pursuer.x
         msg.y = next_waypoint_pursuer.y
-        msg.theta = 0
+        msg.theta = evader_direction + current_theta
         msg.utime = 10
 
-        print("Evader position: ", Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
+        print("Evader position: ", Vector2D(evader_distance * np.cos(evader_direction + current_theta), evader_distance * np.sin(evader_direction + current_theta)))
         print("Desired pursuer position: ", next_waypoint_pursuer)
         lc.publish("PE_WAYPOINT", msg.encode())
 
     if not cam_1_detect:
         print("WARNING: MAIN: Camera timeout in progress. Current camera dt is at ", cam_1_dt, " seconds")
 
-    time.sleep(4)
+    time.sleep(1)
 
 print("Ending pursuit")        
 # except KeyboardInterrupt:

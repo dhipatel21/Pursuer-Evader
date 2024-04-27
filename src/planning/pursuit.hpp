@@ -16,6 +16,7 @@
 
 #define CAPTURE_RADIUS 0.5
 #define TRIAL_TIME 180
+#define MIC_MODE 1
 
 /**
 * Exploration runs a simple state machine to explore -- and possibly escape from -- an environment. The state machine
@@ -79,6 +80,7 @@ public:
     void handleGoodMicrophone(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* mic_info);
     void handleCamera(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* camera_info);
     void handleTurnToSource(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* turn_signal);
+    void handleShutdown(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* camera_info);
 
 private:
     
@@ -114,6 +116,8 @@ private:
 
     bool keep_turning;
     int64_t start_time;
+
+    bool shutdown_;
 
     /////////////////////////// End student code ///////////////////////////////
     
