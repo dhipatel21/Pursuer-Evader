@@ -136,12 +136,12 @@ while (len(pursuit_agent.pursuer_position_memory) < 2):
         lc.publish("TURN_TO_SOURCE", msg.encode())
     elif (cam_1_detect):
         print("INFO: Initial waypoints %i", len(pursuit_agent.pursuer_position_memory))
-        print(Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
-        pursuit_agent.populate_initial_memory(Vector2D(current_x, current_y), Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
+        print(Vector2D(evader_distance * np.cos(evader_direction + current_theta), evader_distance * np.sin(evader_direction + current_theta)))
+        pursuit_agent.populate_initial_memory(Vector2D(current_x, current_y), Vector2D(evader_distance * np.cos(evader_direction + current_theta), evader_distance * np.sin(evader_direction + current_theta)))
     else:
         print("WARNING: INIT: Camera timeout in progress. Current camera dt is at ", cam_1_dt, " seconds")
 
-    time.sleep(4)
+    time.sleep(0.5)
 
 
 while continue_pursuit:
@@ -159,21 +159,21 @@ while continue_pursuit:
         msg.utime = 0
         lc.publish("TURN_TO_SOURCE", msg.encode())
     else:
-        next_waypoint_pursuer = pursuit_agent.update_pursuer_converging_chase(Vector2D(current_x, current_y), Vector2D(np.cos(evader_direction), np.sin(evader_direction)))
+        next_waypoint_pursuer = pursuit_agent.update_pursuer_stern_chase(Vector2D(current_x, current_y), Vector2D(np.cos(evader_direction + current_theta), np.sin(evader_direction + current_theta)))
         msg = pose_xyt_t()
         msg.x = next_waypoint_pursuer.x
         msg.y = next_waypoint_pursuer.y
-        msg.theta = 0
+        msg.theta = evader_direction + current_theta
         msg.utime = 10
 
-        print("Evader position: ", Vector2D(evader_distance * np.cos(evader_direction), evader_distance * np.sin(evader_direction)))
+        print("Evader position: ", Vector2D(evader_distance * np.cos(evader_direction + current_theta), evader_distance * np.sin(evader_direction + current_theta)))
         print("Desired pursuer position: ", next_waypoint_pursuer)
         lc.publish("PE_WAYPOINT", msg.encode())
 
     if not cam_1_detect:
         print("WARNING: MAIN: Camera timeout in progress. Current camera dt is at ", cam_1_dt, " seconds")
 
-    time.sleep(4)
+    time.sleep(1)
 
 print("Ending pursuit")        
 # except KeyboardInterrupt:

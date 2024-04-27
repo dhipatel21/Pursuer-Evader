@@ -31,6 +31,7 @@ Pursuit::Pursuit(int32_t teamNumber,
 , haveHomePose_(false)
 , lcmInstance_(lcmInstance)
 , pathReceived_(false)
+, shutdown_(false)
 {
     assert(lcmInstance_);   // confirm a nullptr wasn't passed in
 
@@ -42,7 +43,7 @@ Pursuit::Pursuit(int32_t teamNumber,
     lcmInstance_->subscribe(PE_REQUEST_CHANNEL, &Pursuit::handleRequest, this);
     lcmInstance_->subscribe(GOOD_MICROPHONE_CHANNEL, &Pursuit::handleGoodMicrophone, this);
     lcmInstance_->subscribe(TURN_TO_SOURCE_CHANNEL, &Pursuit::handleTurnToSource, this);
-
+    lcmInstance_->subscribe(PE_SHUTDOWN_CHANNEL, &Pursuit::handleShutdown, this);
     lcmInstance_->subscribe(CAMERA_1_CHANNEL, &Pursuit::handleCamera, this);
     
     // Send an initial message indicating that the exploration module is initializing. Once the first map and pose are
@@ -154,6 +155,13 @@ void Pursuit::handleTurnToSource(const lcm::ReceiveBuffer* rbuf, const std::stri
     std::cout << "INFO: Turning request received" << std::endl;
     std::lock_guard<std::mutex> autoLock(dataLock_);
     keep_turning = true;
+}
+
+void Pursuit::handleShutdown(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* evader_info)
+{
+    std::lock_guard<std::mutex> autoLock(dataLock_);
+    evaderInfo_.x = evader_info->x;
+    shutdown_ = true;
 }
 
 bool Pursuit::isReadyToUpdate(void)
@@ -349,7 +357,7 @@ int8_t Pursuit::executePursuit(bool initialize)
         std::cout << "INFO: Turning until camera located" << std::endl;
         pose_xyt_t turn;
         turn = currentPose_;
-        turn.theta += 0.1;
+        turn.theta += 0.3;
 
         robot_path_t turn_path;
         turn_path.path.push_back(turn);
@@ -381,7 +389,7 @@ int8_t Pursuit::executePursuit(bool initialize)
 
 
     // If the evader is in range, we win
-    if(evaderInfo_.x < CAPTURE_RADIUS)
+    if(evaderInfo_.x < CAPTURE_RADIUS || shutdown_)
     {
         std::cout << "INFO: EVADER CAPUTRED " << "\n";
         status.status = exploration_status_t::STATUS_COMPLETE;
@@ -402,23 +410,17 @@ int8_t Pursuit::executePursuit(bool initialize)
     lcmInstance_->publish(EXPLORATION_STATUS_CHANNEL, &status);
     
     ////////////////////////////   Determine the next state    ////////////////////////
-    switch(status.status)
+    if (status.status == exploration_status_t::STATUS_IN_PROGRESS)
     {
-        // Don't change states if we're still a work-in-progress
-        case exploration_status_t::STATUS_IN_PROGRESS:
-            return exploration_status_t::STATE_EXPLORING_MAP;
-            
-        // If exploration is completed, then head home
-        case exploration_status_t::STATUS_COMPLETE:
-            return exploration_status_t::STATE_RETURNING_HOME;
-            
-        // If something has gone wrong and we can't reach all frontiers, then fail the exploration.
-        case exploration_status_t::STATUS_FAILED:
-            return exploration_status_t::STATE_FAILED_EXPLORATION;
-            
-        default:
-            std::cerr << "ERROR: Exploration::executeExploringMap: Set an invalid exploration status. Exploration failed!";
-            return exploration_status_t::STATE_FAILED_EXPLORATION;
+        return exploration_status_t::STATE_RETURNING_HOME;
+    }
+    if (status.status == exploration_status_t::STATUS_COMPLETE)
+    {
+        return exploration_status_t::STATE_COMPLETED_EXPLORATION;
+    }
+    else // if(status.status == exploration_status_t::STATUS_FAILED)
+    {
+        return exploration_status_t::STATE_FAILED_EXPLORATION;
     }
 }
 
@@ -435,8 +437,8 @@ int8_t Pursuit::executeCompleted(bool initialize)
 
     // TODO end behavior
     // concludePursuit(true);
-    mbot_motor_command_t cmd = {0, 0, 0};
-    lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
+    // mbot_motor_command_t cmd = {0, 0, 0};
+    // lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
     return exploration_status_t::STATE_COMPLETED_EXPLORATION;
 }
 
@@ -453,7 +455,7 @@ int8_t Pursuit::executeFailed(bool initialize)
 
     // TODO end behavior
     // concludePursuit(false);
-    mbot_motor_command_t cmd = {0, 0, 0};
-    lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
+    // mbot_motor_command_t cmd = {0, 0, 0};
+    // lcmInstance_->publish(MBOT_MOTOR_COMMAND_CHANNEL, &cmd);
     return exploration_status_t::STATE_FAILED_EXPLORATION;
 }

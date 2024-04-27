@@ -14,7 +14,7 @@ from lcmtypes import pose_xyt_t
 from lcm import LCM
 
 ################################################################################
-threshold = 0.4  # TODO: Adjust based on testing
+threshold = 0.65  # TODO: Adjust based on testing
 
 import wave
 import pyaudio
