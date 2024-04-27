@@ -31,4 +31,9 @@
 # play_wav("4khz.wav")
 
 import subprocess
-subprocess.run(["aplay", "4khz.wav"])
+import time
+
+while(True):
+    subprocess.run(["aplay", "hello.wav"])
+    print("run once")
+    time.sleep(1)

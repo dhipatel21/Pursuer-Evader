@@ -16,6 +16,7 @@
 
 #define CAPTURE_RADIUS 0.5
 #define TRIAL_TIME 180
+#define MIC_MODE 1
 
 /**
 * Exploration runs a simple state machine to explore -- and possibly escape from -- an environment. The state machine

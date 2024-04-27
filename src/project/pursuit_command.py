@@ -12,6 +12,7 @@ from lcm import LCM
 from lcmtypes import mbot_motor_command_t, pose_xyt_t
 
 THRESHOLD = 0.4
+MIC_MODE = 1
 
 lc = LCM("udpm://239.255.76.67:7667?ttl=2")
 
@@ -61,7 +62,8 @@ def camera_1_handler(channel, data):
         cam_1_detect = False
         print("No detection on cam 1")
     else:
-        evader_direction = cam_msg.theta + CAM_1_OFFSET
+        if (MIC_MODE == 0):
+            evader_direction = cam_msg.theta + CAM_1_OFFSET
         evader_distance = cam_msg.x
 
         print("INFO: Evader distance: ", evader_distance)
@@ -88,7 +90,8 @@ def good_mic_handler(channel, data):
     global evader_direction
     mic_msg = pose_xyt_t.decode(data)
 
-    evader_direction = mic_msg.theta
+    if (MIC_MODE == 1):
+        evader_direction = mic_msg.theta
     
 def pose_handler(channel, data):
     global current_x

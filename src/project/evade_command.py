@@ -10,8 +10,10 @@ import numpy as np
 import sys
 from lcm import LCM
 from lcmtypes import mbot_motor_command_t, pose_xyt_t
+import subprocess
 
 THRESHOLD = 3500
+MIC_MODE = 1
 
 global continue_evasion
 continue_evasion = True
@@ -70,8 +72,8 @@ def pose_handler(channel, data):
 # Initialize the simulation environment
 pursuer_initial_position = Vector2D(0, 0)
 evader_initial_position = Vector2D(10, 10)
-pursuer_speed = 0.1
-evader_speed = 0.1
+pursuer_speed = 1
+evader_speed = 1
 
 lower_bounds : Vector2D = Vector2D(0, 0)
 upper_bounds : Vector2D = Vector2D(10, 10)
@@ -112,7 +114,12 @@ while continue_evasion and (high_freq_acc < 10):
 
     lc.publish("PE_WAYPOINT", msg.encode())
 
-    time.sleep(4)
+
+    if (MIC_MODE == 0):
+        time.sleep(1)
+    else:
+        subprocess.run(["aplay", "hello.wav"])
+
 
 print("=======EXITING NOW=======")
 sys.exit()

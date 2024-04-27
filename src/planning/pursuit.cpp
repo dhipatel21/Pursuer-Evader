@@ -135,15 +135,19 @@ void Pursuit::handleRequest(const lcm::ReceiveBuffer* rbuf, const std::string& c
 void Pursuit::handleGoodMicrophone(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* mic_info)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);
-    evaderInfo_.theta = mic_info->theta;
-    evaderInfo_.utime = mic_info->utime;
+    if (MIC_MODE == 1) {
+        evaderInfo_.theta = mic_info->theta;
+        evaderInfo_.utime = mic_info->utime;
+    }   
 }
 
 void Pursuit::handleCamera(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const pose_xyt_t* camera_info)
 {
     std::lock_guard<std::mutex> autoLock(dataLock_);
     if (camera_info->y != -1) {
-        evaderInfo_.theta = camera_info->theta;
+        if (MIC_MODE == 0) {
+            evaderInfo_.theta = camera_info->theta;
+        }
         evaderInfo_.utime = camera_info->utime;
         evaderInfo_.x = camera_info->x;
         keep_turning = false;
