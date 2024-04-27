@@ -13,7 +13,7 @@ from lcmtypes import mbot_motor_command_t, pose_xyt_t
 # Define constants
 RATE = 48000  # Sampling rate
 BLOCK_SIZE = 1024  # Block size for audio input
-THRESHOLD_FREQUENCY = 0  # TODO: Adjust based on testing, Frequency threshold in Hz
+THRESHOLD_FREQUENCY = 3500  # TODO: Adjust based on testing, Frequency threshold in Hz
 
 try:
     mic = hid.Device(0x2752, 0x1C)

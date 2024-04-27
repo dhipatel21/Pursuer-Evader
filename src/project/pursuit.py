@@ -124,7 +124,7 @@ class Pursuit:
         future_evader_position = self.pursuer_position + evader_direction * prediction_time
         
         print(future_evader_position.magnitude())
-        future_evader_position.saturate(self.upper_bounds, self.lower_bounds)
+        # future_evader_position.saturate(self.upper_bounds, self.lower_bounds)
         
         # Return the pursuer's next waypoint
         return future_evader_position
@@ -139,7 +139,7 @@ class Pursuit:
         current_direction = self.calculate_moving_average_direction(evader_direction)
         
         self.pursuer_position = self.pursuer_position + current_direction
-        self.pursuer_position.saturate(self.upper_bounds, self.lower_bounds)
+        # self.pursuer_position.saturate(self.upper_bounds, self.lower_bounds)
 
         # Return the pursuer's next waypoint
         return self.pursuer_position
@@ -161,7 +161,7 @@ class Pursuit:
         ideal_pursuer = self.pursuer_position + to_future_evader * self.evader_speed
         print(ideal_pursuer.magnitude())
         
-        ideal_pursuer.saturate(self.upper_bounds, self.lower_bounds)
+        # ideal_pursuer.saturate(self.upper_bounds, self.lower_bounds)
         
         # Return the pursuer's next waypoint
         return ideal_pursuer

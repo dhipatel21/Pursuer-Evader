@@ -11,7 +11,7 @@ class Evasion:
 
         self.direction_state = 0
 
-    def update_evader_random(self, leg_done):
+    def update_evader_random(self):
         """
         Move randomly according to the evader speed.
         """

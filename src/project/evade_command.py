@@ -102,7 +102,7 @@ while continue_evasion and (high_freq_acc < 10):
     if (distance_traveled < 1):
         leg_done = True
 
-    next_waypoint_evader = evasion_agent.update_evader_CW(leg_done)
+    next_waypoint_evader = evasion_agent.update_evader_random()
     print("Desired evader position: ", next_waypoint_evader)
     msg = pose_xyt_t()
     msg.x = next_waypoint_evader.x
