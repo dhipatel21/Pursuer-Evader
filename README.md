@@ -17,7 +17,9 @@ Our project concludes with a series of tests and demonstrations of the two robot
 
 ## Basics of The Simulation
 At first, the positions of the MPBots are unknown to one another. After a sound pulse, or in the visual case, target acquisition, the pursuit-evasion game begins. The respective autonomy modules send commands to Marco and Polo, which are interpreted by the motion planner to ensure no environmental collisions, and to plan the intermediate states using the A* search algorithm. Finally, once Marco comes into range of Polo, a shutdown signal is broadcast, and both MPBots cease operation.
-<img src="https://github.com/dhipatel21/Pursuer-Evader/blob/8ca904da12f93cf6add887b21234a7170033855d/Flow_Diagram.pdf" alt="drawing" width="400"/>
+
+A diagram showing the flow of information  
+<img src="https://github.com/dhipatel21/Pursuer-Evader/blob/5ddf09b76551ce536cf3d20acb60aa509091db27/Flow_Diagram.png" alt="drawing" width="550"/>
 
 ## Conclusion
 This project set out to extend the sensing, control, and autonomy functionalities of the MPBot platform to enable the performance of a pursuit-evasion game. Despite technical difficulties with the UMA-8 directional microphone, processing limitations which restricted the MPBot to the use of a single tracking camera, and general platform nonlinearities (unicylce dynamics are one of the worst dynamical models for both pursuit and evasion, due to its reliance on heading for movement), we have largely succeeded. We first demonstrated the ability to track a moving April Tag target, plan around obstacles, reacquire the target after a loss of lock, and successfully intercept the evader. We then demonstrated the ability to replicate this behavior using audio-only tracking with the UMA-8 directional microphone array, proving the original concept. The upgraded MPBot firmware, designed with modularity in mind, will be able to be used in future projects, attempting more ambitious autonomous behaviors.
